@@ -5,6 +5,7 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
+import { useState } from "react"
 import type { UseFormReturn } from "react-hook-form"
 import type z from "zod"
 import type { CreateOrderSchema, orderSchema } from "../../app/home/orders/order.interface"
@@ -14,11 +15,12 @@ interface iProps {
     form: UseFormReturn<z.infer<typeof orderSchema>>
     onSubmit: () => void
     addToList: () => void
-    ordersList: CreateOrderSchema[]
     isPending: boolean
 }
 
-export const SalesForm = ({ form, onSubmit, addToList, ordersList, isPending }: iProps) => {
+export const SalesForm = ({ form, onSubmit, addToList, isPending }: iProps) => {
+    const [ordersList, setOrdersList] = useState<CreateOrderSchema[]>([])
+
     return (
         <Card className="border-0 shadow-none bg-transparent">
             <CardContent className="p-0">
@@ -251,12 +253,7 @@ export const SalesForm = ({ form, onSubmit, addToList, ordersList, isPending }: 
 
                                 {ordersList.length > 0 && (
                                     <div className="pt-4 border-t border-gray-200">
-                                        <Button
-                                            type="button"
-                                            className="h-11 w-full text-white"
-                                            onClick={onSubmit}
-                                            disabled={isPending}
-                                        >
+                                        <Button type="button" className="h-11 w-full text-white" onClick={onSubmit} disabled={isPending}>
                                             {isPending
                                                 ? "Salvando..."
                                                 : `Salvar Venda (${ordersList.length} ${ordersList.length === 1 ? "item" : "itens"})`}

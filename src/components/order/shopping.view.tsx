@@ -8,14 +8,16 @@ import { Status } from "@/constants/order-status"
 import { Eye, EyeOff, Search } from "lucide-react"
 import type { Dispatch, SetStateAction } from "react"
 import { useMemo, useState } from "react"
-import type { Order } from "../../app/home/orders/order.interface"
+import type { Order, Solicitation } from "../../app/home/orders/order.interface"
 import { IsLoadingCard } from "../global/isloading-card"
 import { NotFoundOrder } from "../global/not-found-order"
-import { AccordionOrderCard } from "./accordion-order-card"
+import { AccordionSolicitationCard } from "./accordion-solicitation-card"
 
 interface iProps {
   data: Order[]
+  solicitations: Solicitation[]
   isLoading: boolean
+  isLoadingSolicitations: boolean
   onEditOrder?: (order: Order, index: number) => void
   onDeleteOrder?: (index: number) => void
   confirmedOrder: number[]
@@ -30,6 +32,7 @@ interface iProps {
 
 export const ShoppingView = ({
   data,
+  solicitations,
   isLoading,
   confirmedOrder,
   setConfirmedOrder,
@@ -39,6 +42,7 @@ export const ShoppingView = ({
   toggleFieldVisibility,
   isFieldVisible,
   shouldShowField,
+  isLoadingSolicitations
 }: iProps) => {
   const [searchTerm, setSearchTerm] = useState("")
 
@@ -83,7 +87,7 @@ export const ShoppingView = ({
     })
   }, [data, searchTerm])
 
-  if (isLoading) return <IsLoadingCard />
+  if (isLoading || isLoadingSolicitations) return <IsLoadingCard />
 
   if (data.length === 0) return <NotFoundOrder />
 
@@ -181,31 +185,15 @@ export const ShoppingView = ({
         </Button>
       </div>
 
-      {filteredData.length === 0 && searchTerm ? (
-        <div className="text-center py-8">
-          <p className="text-gray-500">Nenhum pedido encontrado para "{searchTerm}"</p>
-          <Button variant="outline" onClick={() => setSearchTerm("")} className="mt-2">
-            Limpar filtro
-          </Button>
-        </div>
-      ) : (
-        <div className="space-y-3">
-          {filteredData.map((order, index) => (
-            <AccordionOrderCard
-              key={`order-${index}-${order.code}`}
-              order={order}
-              index={index}
-              handleSelectOrder={setConfirmedOrder}
-              confirmedOrder={confirmedOrder}
-              onUpdate={onUpdate}
-              showAllSensitiveInfo={showAllSensitiveInfo}
-              toggleFieldVisibility={toggleFieldVisibility}
-              isFieldVisible={isFieldVisible}
-              shouldShowField={shouldShowField}
-            />
-          ))}
-        </div>
-      )}
+
+      <div className="flex flex-col gap-4">
+        {solicitations.map((solicitation: Solicitation, idx: number) => (
+          <AccordionSolicitationCard
+            key={solicitation.id ?? idx}
+            solicitation={solicitation}
+          />
+        ))}
+      </div>
 
       {filteredData.length > 0 && (
         <div className="bg-white rounded-lg border border-purple-200 p-4 mt-6">

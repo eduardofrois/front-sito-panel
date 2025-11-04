@@ -3,7 +3,7 @@ import { zodResolver } from "@hookform/resolvers/zod"
 import { useQueryClient } from "@tanstack/react-query"
 import { useForm } from "react-hook-form"
 import z from "zod"
-import useMutationUpdateNewClientInOrder from "../orders/hooks/useMutateUpdateNewClientInOrder"
+import useMutationUpdateNewClientInOrder from "../orders/hooks/mutates/useMutateUpdateNewClientInOrder"
 import useQueryGetOrdersByStatus from "../orders/hooks/useQueryGetOrdersByStatus"
 import { formSchema } from "./readytoship.interface"
 

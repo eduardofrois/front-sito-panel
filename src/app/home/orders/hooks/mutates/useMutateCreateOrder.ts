@@ -1,7 +1,7 @@
 import api from "@/services/api";
 import { useMutation } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { CreateOrderSchema } from "../order.interface";
+import { CreateOrderSchema } from "../../order.interface";
 
 async function CreateOrder(data: CreateOrderSchema[]) {
     const response = await api.post("/orders", data);
