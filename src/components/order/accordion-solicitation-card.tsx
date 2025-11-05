@@ -2,7 +2,6 @@ import { Solicitation } from "@/app/home/orders/order.interface"
 import { formatCurrency, formatDate } from "@/functions/format-functions"
 import { getStatusColor } from "@/functions/style-functions"
 import { Calendar, CheckCircle2, Clock, DollarSign, Package } from "lucide-react"
-import { useState } from "react"
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "../ui/accordion"
 import { DialogFormOrder } from "./dialog-form-order"
 
@@ -11,10 +10,9 @@ interface AccordionSolicitationCard {
 }
 
 export const AccordionSolicitationCard = ({ solicitation }: AccordionSolicitationCard) => {
-    const [isOpen, setIsOpen] = useState<boolean>(false);
 
     return (
-        <Accordion type="single" collapsible className="w-full" defaultValue="item-1">
+        <Accordion type="single" collapsible className="w-full">
             <AccordionItem value="item-1" className="border rounded-lg bg-white shadow-sm hover:shadow-md transition-shadow">
                 <AccordionTrigger className="px-4 py-4 hover:no-underline group">
                     <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 w-full text-left">
@@ -44,7 +42,7 @@ export const AccordionSolicitationCard = ({ solicitation }: AccordionSolicitatio
 
                 <AccordionContent className="px-4 pb-4">
 
-                    <DialogFormOrder solicitation={solicitation.id} />
+                    <DialogFormOrder solicitation={solicitation.id} text="Cadastrar Pedido" variant="default" />
 
                     <div className="mb-3 pt-2">
                         <h4 className="text-sm font-semibold text-gray-700 flex items-center gap-2">

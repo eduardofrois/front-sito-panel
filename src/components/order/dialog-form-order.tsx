@@ -1,4 +1,5 @@
 import { useOrdersModel } from "@/app/home/orders/orders.model"
+import { useQueryClient } from "@tanstack/react-query"
 import { X } from "lucide-react"
 import { Button } from "../ui/button"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "../ui/dialog"
@@ -7,11 +8,14 @@ import { Input } from "../ui/input"
 import { Textarea } from "../ui/textarea"
 
 interface iProps {
-    solicitation: number
+    solicitation: number | null
+    text: string
+    variant: "link" | "default" | "destructive" | "outline" | "secondary" | "ghost" | null | undefined
 }
 
-export function DialogFormOrder({ solicitation }: iProps) {
-    const { form, onSubmit, isPending, valuesForm, setValuesForm } = useOrdersModel()
+export function DialogFormOrder({ solicitation, text, variant }: iProps) {
+    const { form, onSubmit, isPending, valuesForm, setValuesForm, addOrderAndSolicitation, isPendingAddOrderAndSolicitation } = useOrdersModel()
+    const queryClient = useQueryClient();
 
     function addToList() {
         const data = form.getValues()
@@ -19,15 +23,21 @@ export function DialogFormOrder({ solicitation }: iProps) {
         form.reset()
     }
 
-    function removeFromList(index: number) {
-        setValuesForm((prev) => prev.filter((_, i) => i !== index))
+    function removeFromList(index?: number) {
+        index ? setValuesForm((prev) => prev.filter((_, i) => i !== index)) : setValuesForm([])
+    }
+
+    function formSubmit() {
+        addOrderAndSolicitation({ data: valuesForm, solicitation })
+        removeFromList()
+        queryClient.invalidateQueries({ queryKey: ['getAllSolicitations'], exact: false })
     }
 
     return (
         <Dialog>
             <form className="h-full">
                 <DialogTrigger asChild>
-                    <Button className="w-full">Cadastrar Pedidos</Button>
+                    <Button className="w-full" variant={variant}>{text}</Button>
                 </DialogTrigger>
 
                 <DialogContent className="max-h-[90vh] w-full max-w-4xl flex flex-col gap-0 p-0">
@@ -40,11 +50,10 @@ export function DialogFormOrder({ solicitation }: iProps) {
 
                     <div className="overflow-y-auto flex-1 px-6 py-6">
                         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                            {/* Formulário */}
                             <div>
                                 <h3 className="text-sm font-semibold text-gray-700 mb-4 uppercase tracking-wide">Dados do Produto</h3>
                                 <Form {...form}>
-                                    <form onSubmit={form.handleSubmit(addToList)} className="space-y-4">
+                                    <form onSubmit={form.handleSubmit(formSubmit)} className="space-y-4">
                                         <div className="grid grid-cols-2 gap-3">
                                             <FormField
                                                 control={form.control}
@@ -212,9 +221,10 @@ export function DialogFormOrder({ solicitation }: iProps) {
 
                                         <div className="flex gap-2 pt-4">
                                             <Button
-                                                type="submit"
+                                                type="button"
                                                 className="flex-1 h-9 text-sm bg-purple-600 hover:bg-purple-700"
                                                 disabled={form.formState.isSubmitting}
+                                                onClick={() => addToList()}
                                             >
                                                 Adicionar à lista
                                             </Button>
@@ -282,7 +292,7 @@ export function DialogFormOrder({ solicitation }: iProps) {
                                                     </div>
                                                     <div>
                                                         <p className="text-gray-500 font-medium">Total</p>
-                                                        <p className="text-purple-600 font-bold">R$ {Number(order.sale_price * valuesForm.length).toFixed(2)}</p>
+                                                        <p className="text-purple-600 font-bold">R$ {Number(order.sale_price * order.amount).toFixed(2)}</p>
                                                     </div>
                                                 </div>
                                             </div>
@@ -299,7 +309,7 @@ export function DialogFormOrder({ solicitation }: iProps) {
                                 <span className="text-gray-600">
                                     Total:{" "}
                                     <span className="font-bold text-purple-600 text-lg">
-                                        R$ {valuesForm.reduce((sum, order) => sum + Number(order.sale_price * valuesForm.length || 0), 0).toFixed(2)}
+                                        R$ {valuesForm.reduce((sum, order) => sum + Number(order.sale_price * order.amount || 0), 0).toFixed(2)}
                                     </span>
                                 </span>
                             </div>
@@ -319,10 +329,10 @@ export function DialogFormOrder({ solicitation }: iProps) {
                             <Button
                                 type="button"
                                 className="h-9 bg-green-600 hover:bg-green-700"
-                                onClick={onSubmit}
-                                disabled={isPending}
+                                disabled={isPendingAddOrderAndSolicitation}
+                                onClick={() => formSubmit()}
                             >
-                                {isPending
+                                {isPendingAddOrderAndSolicitation
                                     ? "Salvando..."
                                     : `Salvar ${valuesForm.length} ${valuesForm.length === 1 ? "Pedido" : "Pedidos"}`}
                             </Button>

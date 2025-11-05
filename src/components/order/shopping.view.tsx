@@ -1,10 +1,8 @@
 "use client"
 
-import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Switch } from "@/components/ui/switch"
-import { Status } from "@/constants/order-status"
 import { Eye, EyeOff, Search } from "lucide-react"
 import type { Dispatch, SetStateAction } from "react"
 import { useMemo, useState } from "react"
@@ -12,6 +10,7 @@ import type { Order, Solicitation } from "../../app/home/orders/order.interface"
 import { IsLoadingCard } from "../global/isloading-card"
 import { NotFoundOrder } from "../global/not-found-order"
 import { AccordionSolicitationCard } from "./accordion-solicitation-card"
+import { DialogFormOrder } from "./dialog-form-order"
 
 interface iProps {
   data: Order[]
@@ -42,7 +41,7 @@ export const ShoppingView = ({
   toggleFieldVisibility,
   isFieldVisible,
   shouldShowField,
-  isLoadingSolicitations
+  isLoadingSolicitations,
 }: iProps) => {
   const [searchTerm, setSearchTerm] = useState("")
 
@@ -180,9 +179,12 @@ export const ShoppingView = ({
       </div>
 
       <div className="w-full">
-        <Button className="w-full" onClick={() => onUpdate(confirmedOrder, Status.ConfirmSale)}>
+        {/* <Button className="w-full" onClick={() => onUpdate(confirmedOrder, Status.ConfirmSale)}>
           Efetivar pedido(s)
-        </Button>
+        </Button> */}
+
+        <DialogFormOrder solicitation={null} text="Adicionar solicitação" variant={"outline"} />
+
       </div>
 
 

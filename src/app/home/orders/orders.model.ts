@@ -5,6 +5,7 @@ import { useQueryClient } from "@tanstack/react-query"
 import { useState } from "react"
 import { useForm } from "react-hook-form"
 import type z from "zod"
+import useMutationAddOrderAndSolicitation from "./hooks/mutates/useMutateAddOrderAndSolicitation"
 import useMutationCreateOrder from "./hooks/mutates/useMutateCreateOrder"
 import useMutationUpdateStatusOrder from "./hooks/mutates/useMutateUpdateStatusOrder"
 import useQueryGetAllOrders from "./hooks/useQueryGetAllOrders"
@@ -16,6 +17,7 @@ export const useOrdersModel = () => {
   const { data: solicitations, isLoading: isLoadingSolicitations } = useQueryGetAllSolicitations();
   const { mutateAsync, isPending } = useMutationCreateOrder()
   const { mutateAsync: updateStautsOrderAync, isPending: isPendingUpdateStatusOrder } = useMutationUpdateStatusOrder()
+  const { mutateAsync: addOrderAndSolicitation, isPending: isPendingAddOrderAndSolicitation } = useMutationAddOrderAndSolicitation();
 
   const [valuesForm, setValuesForm] = useState<CreateOrderSchema[]>([])
   const [confirmedOrder, setConfirmedOrder] = useState<number[]>([])
@@ -104,6 +106,7 @@ export const useOrdersModel = () => {
     toggleFieldVisibility,
     isFieldVisible,
     shouldShowField,
-    solicitations, isLoadingSolicitations
+    solicitations, isLoadingSolicitations,
+    addOrderAndSolicitation, isPendingAddOrderAndSolicitation
   }
 }
