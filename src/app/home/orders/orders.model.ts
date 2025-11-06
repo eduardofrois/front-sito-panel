@@ -2,7 +2,7 @@
 
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useQueryClient } from "@tanstack/react-query"
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { useForm } from "react-hook-form"
 import type z from "zod"
 import useMutationAddOrderAndSolicitation from "./hooks/mutates/useMutateAddOrderAndSolicitation"
@@ -13,8 +13,12 @@ import useQueryGetAllSolicitations from "./hooks/useQueryGetAllSolicitations"
 import { type CreateOrderSchema, orderSchema } from "./order.interface"
 
 export const useOrdersModel = () => {
+  const [pagination, setPagination] = useState({
+    pageIndex: 1,
+    pageSize: 10,
+  });
   const { data, isLoading } = useQueryGetAllOrders()
-  const { data: solicitations, isLoading: isLoadingSolicitations } = useQueryGetAllSolicitations();
+  const { data: solicitations, isLoading: isLoadingSolicitations, refetch: refetchSolicitation } = useQueryGetAllSolicitations({ pageNumber: pagination.pageIndex, pageSize: pagination.pageSize });
   const { mutateAsync, isPending } = useMutationCreateOrder()
   const { mutateAsync: updateStautsOrderAync, isPending: isPendingUpdateStatusOrder } = useMutationUpdateStatusOrder()
   const { mutateAsync: addOrderAndSolicitation, isPending: isPendingAddOrderAndSolicitation } = useMutationAddOrderAndSolicitation();
@@ -87,6 +91,10 @@ export const useOrdersModel = () => {
 
   form.setValue("total_price", (form.watch("sale_price") ?? 0) * (form.watch("amount") ?? 1))
 
+  useEffect(() => {
+    refetchSolicitation()
+  }, [setPagination])
+
   return {
     form,
     onSubmit,
@@ -107,6 +115,7 @@ export const useOrdersModel = () => {
     isFieldVisible,
     shouldShowField,
     solicitations, isLoadingSolicitations,
-    addOrderAndSolicitation, isPendingAddOrderAndSolicitation
+    addOrderAndSolicitation, isPendingAddOrderAndSolicitation,
+    pagination, setPagination
   }
 }

@@ -9,6 +9,7 @@ import { useMemo, useState } from "react"
 import type { Order, Solicitation } from "../../app/home/orders/order.interface"
 import { IsLoadingCard } from "../global/isloading-card"
 import { NotFoundOrder } from "../global/not-found-order"
+import { Button } from "../ui/button"
 import { AccordionSolicitationCard } from "./accordion-solicitation-card"
 import { DialogFormOrder } from "./dialog-form-order"
 
@@ -27,6 +28,8 @@ interface iProps {
   toggleFieldVisibility: (orderId: number, fieldName: string) => void
   isFieldVisible: (orderId: number, fieldName: string) => boolean
   shouldShowField: (orderId: number, fieldName: string) => boolean
+  pagination: { pageIndex: number; pageSize: number };
+  setPagination: Dispatch<SetStateAction<{ pageIndex: number; pageSize: number }>>
 }
 
 export const ShoppingView = ({
@@ -42,6 +45,7 @@ export const ShoppingView = ({
   isFieldVisible,
   shouldShowField,
   isLoadingSolicitations,
+  pagination, setPagination
 }: iProps) => {
   const [searchTerm, setSearchTerm] = useState("")
 
@@ -193,23 +197,62 @@ export const ShoppingView = ({
           <AccordionSolicitationCard
             key={solicitation.id ?? idx}
             solicitation={solicitation}
+            confirmedOrder={confirmedOrder}
+            setConfirmedOrder={setConfirmedOrder}
+            onUpdate={onUpdate}
           />
         ))}
       </div>
 
-      {filteredData.length > 0 && (
-        <div className="bg-white rounded-lg border border-purple-200 p-4 mt-6">
-          <div className="flex items-center justify-between">
-            <div className="text-sm text-gray-600">
-              {filteredData.length} {filteredData.length === 1 ? "pedido" : "pedidos"}
-              {searchTerm
-                ? ` encontrado${filteredData.length === 1 ? "" : "s"}`
-                : ` carregado${filteredData.length === 1 ? "" : "s"}`}
-              {searchTerm && ` de ${data.length} total`}
+      <div className="flex items-center justify-center gap-4 mt-6">
+        <Button
+          variant="outline"
+          disabled={pagination.pageIndex <= 1}
+          onClick={() =>
+            setPagination(prev => ({
+              ...prev,
+              pageIndex: Math.max(prev.pageIndex - 1, 1),
+            }))
+          }
+          className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 border border-purple-200 rounded-lg hover:bg-purple-50 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+        >
+          Voltar
+        </Button>
+
+        <div className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-purple-700 border border-purple-200 rounded-lg hover:bg-purple-50 transition-all">
+          Página {pagination.pageIndex}
+        </div>
+
+        <Button
+          variant="outline"
+          onClick={() =>
+            setPagination(prev => ({
+              ...prev,
+              pageIndex: prev.pageIndex + 1,
+            }))
+          }
+          className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 border border-purple-200 rounded-lg hover:bg-purple-50 transition-all"
+        >
+          Próxima
+        </Button>
+      </div>
+
+
+      {
+        filteredData.length > 0 && (
+          <div className="bg-white rounded-lg border border-purple-200 p-4 mt-6">
+            <div className="flex items-center justify-between">
+              <div className="text-sm text-gray-600">
+                {filteredData.length} {filteredData.length === 1 ? "pedido" : "pedidos"}
+                {searchTerm
+                  ? ` encontrado${filteredData.length === 1 ? "" : "s"}`
+                  : ` carregado${filteredData.length === 1 ? "" : "s"}`}
+                {searchTerm && ` de ${data.length} total`}
+              </div>
             </div>
           </div>
-        </div>
-      )}
-    </div>
+        )
+      }
+    </div >
   )
 }

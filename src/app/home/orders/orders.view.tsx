@@ -22,7 +22,8 @@ export const OrdersView = (props: OrdersViewProps) => {
     toggleFieldVisibility,
     isFieldVisible,
     shouldShowField,
-    isLoadingSolicitations, solicitations
+    isLoadingSolicitations, solicitations,
+    pagination, setPagination
   } = props
 
   return (
@@ -40,6 +41,8 @@ export const OrdersView = (props: OrdersViewProps) => {
         toggleFieldVisibility={toggleFieldVisibility}
         isFieldVisible={isFieldVisible}
         shouldShowField={shouldShowField}
+        pagination={pagination}
+        setPagination={setPagination}
       />
     </div>
   )
