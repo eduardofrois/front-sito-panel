@@ -1,0 +1,38 @@
+export const CARD_STATES = {
+    DEFAULT: {
+        background: "bg-white dark:bg-slate-950",
+        border: "border-slate-200 dark:border-slate-800",
+        text: "text-slate-900 dark:text-slate-50",
+        label: "text-slate-500 dark:text-slate-400",
+        icon: "text-slate-600 dark:text-slate-400",
+        accentBorder: "bg-slate-300 dark:bg-slate-700",
+        hover: "hover:shadow-md hover:border-slate-300 dark:hover:border-slate-700",
+    },
+    SELECTED: {
+        background: "bg-indigo-50 dark:bg-indigo-950",
+        border: "border-indigo-200 dark:border-indigo-800",
+        text: "text-indigo-900 dark:text-indigo-50",
+        label: "text-indigo-600 dark:text-indigo-400",
+        icon: "text-indigo-600 dark:text-indigo-400",
+        accentBorder: "bg-indigo-500",
+        hover: "hover:shadow-md hover:border-indigo-300 dark:hover:border-indigo-700",
+    },
+    CONFIRMED: {
+        background: "bg-blue-50 dark:bg-blue-950",
+        border: "border-blue-200 dark:border-blue-800",
+        text: "text-blue-900 dark:text-blue-50",
+        label: "text-blue-600 dark:text-blue-400",
+        icon: "text-blue-600 dark:text-blue-400",
+        accentBorder: "bg-blue-500",
+        hover: "hover:shadow-md hover:border-blue-300 dark:hover:border-blue-700",
+    },
+    CONFIRMED_AND_SELECTED: {
+        background: "bg-emerald-50 dark:bg-emerald-950",
+        border: "border-emerald-200 dark:border-emerald-800",
+        text: "text-emerald-900 dark:text-emerald-50",
+        label: "text-emerald-600 dark:text-emerald-400",
+        icon: "text-emerald-600 dark:text-emerald-400",
+        accentBorder: "bg-emerald-500",
+        hover: "hover:shadow-md hover:border-emerald-300 dark:hover:border-emerald-700",
+    },
+}

@@ -60,8 +60,8 @@ export const useOrdersModel = () => {
     await updateStautsOrderAync({ orders: orders, value: value })
     setConfirmedOrder([])
     queryClient.invalidateQueries({
-      queryKey: ["getAllOrders"],
-      exact: true,
+      queryKey: ["getAllSolicitations"],
+      exact: false,
     })
   }
 
