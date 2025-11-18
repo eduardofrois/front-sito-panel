@@ -195,6 +195,7 @@ export const ShoppingView = ({
       <div className="flex flex-col gap-4">
         {solicitations.map((solicitation: Solicitation, idx: number) => (
           <AccordionSolicitationCard
+            type="order"
             key={solicitation.id ?? idx}
             solicitation={solicitation}
             confirmedOrder={confirmedOrder}

@@ -9,10 +9,11 @@ interface OrderItemCardProps {
     item: any
     isSelected: boolean
     onToggleSelect: () => void
+    type: "order" | "account"
 }
 
-export const OrderItemCard = ({ item, isSelected, onToggleSelect }: OrderItemCardProps) => {
-    const cardState = getCardState(item, isSelected)
+export const OrderItemCard = ({ item, isSelected, onToggleSelect, type }: OrderItemCardProps) => {
+    const cardState = getCardState(item, isSelected, type)
     const stateConfig = CARD_STATES[cardState]
 
     return (

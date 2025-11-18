@@ -10,11 +10,12 @@ import { useAccountsModel } from "./accounts.model"
 type AccountsViewProps = ReturnType<typeof useAccountsModel>
 
 export const AccountsView = (props: AccountsViewProps) => {
-    const { data, isLoading, selectedOrders, setSelectedOrders, totalValueToPay, onUpdate, handleCardClick, canSelectCard, firstSelectedOrder, isLoadingPending, ordersPending, isPending, updatePaidPrice } = props
+    const { data, isLoading, selectedOrders, setSelectedOrders, totalValueToPay, onUpdate, handleCardClick, canSelectCard, firstSelectedOrder, isLoadingPending,
+        ordersPending, isPending, updatePaidPrice, isLoadingSolicitations, solicitations } = props
 
-    if (isLoading) return <IsLoadingCard />
+    if (isLoadingSolicitations) return <IsLoadingCard />
 
-    if (data.length === 0) return <NotFoundOrder />
+    if (solicitations.length === 0) return <NotFoundOrder />
 
     return (
         <div className="pb-6">

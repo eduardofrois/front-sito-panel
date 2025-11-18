@@ -3,17 +3,27 @@ import { useQueryClient } from "@tanstack/react-query"
 import { useState } from "react"
 import useQueryGetPendingPaid from "../orders/hooks/mutates/useMutateGetOrdersPaidPending"
 import useMutationUpdateStatusOrder from "../orders/hooks/mutates/useMutateUpdateStatusOrder"
+import useQueryGetAllSolicitations from "../orders/hooks/useQueryGetAllSolicitations"
 import useQueryGetOrdersByStatus from "../orders/hooks/useQueryGetOrdersByStatus"
 import { Order } from "../orders/order.interface"
 import useMutateUpdatePaidPrice from "./hooks/useMutateUpdatePaidPrice"
 import useQueryGetClients from "./hooks/useQueryGetClients"
 
 export const useAccountsModel = () => {
+    const [pagination, setPagination] = useState({
+        pageIndex: 1,
+        pageSize: 10,
+    });
+    const [confirmedOrder, setConfirmedOrder] = useState<number[]>([])
+
     const { data, isLoading } = useQueryGetOrdersByStatus(Status.MoreThenOne)
     const { data: clients, isLoading: isLoadingClients } = useQueryGetClients()
     const { data: ordersPending, isLoading: isLoadingPending } = useQueryGetPendingPaid()
     const { mutateAsync } = useMutationUpdateStatusOrder();
     const { mutateAsync: update, isPending } = useMutateUpdatePaidPrice();
+
+    const { data: solicitations, isLoading: isLoadingSolicitations, refetch: refetchSolicitation } = useQueryGetAllSolicitations({ pageNumber: pagination.pageIndex, pageSize: pagination.pageSize });
+
 
     const [selectedOrders, setSelectedOrders] = useState<number[]>([])
     const [firstSelectedOrder, setFirstSelectedOrder] = useState<Order | null>(null)
@@ -83,6 +93,8 @@ export const useAccountsModel = () => {
         firstSelectedOrder,
         clients, isLoadingClients,
         ordersPending, isLoadingPending,
-        isPending, updatePaidPrice
+        isPending, updatePaidPrice,
+        solicitations, isLoadingSolicitations, refetchSolicitation,
+        confirmedOrder, setConfirmedOrder
     }
 }

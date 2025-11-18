@@ -1,11 +1,11 @@
 "use client"
 
 import type { Solicitation } from "@/app/home/orders/order.interface"
-import { Status } from "@/constants/order-status"
+import { Status, Status_String } from "@/constants/order-status"
 import { formatDate } from "@/functions/format-functions"
 import { getStatusColor } from "@/functions/style-functions"
 import { Calendar, Package } from "lucide-react"
-import type { Dispatch, SetStateAction } from "react"
+import { useState, type Dispatch, type SetStateAction } from "react"
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "../ui/accordion"
 import {
     AlertDialog,
@@ -27,6 +27,7 @@ interface AccordionSolicitationCard {
     confirmedOrder: number[]
     setConfirmedOrder: Dispatch<SetStateAction<number[]>>
     onUpdate: (orders: number[], value: number) => void
+    type: "order" | "account"
 }
 
 export const AccordionSolicitationCard = ({
@@ -34,18 +35,24 @@ export const AccordionSolicitationCard = ({
     confirmedOrder,
     setConfirmedOrder,
     onUpdate,
+    type
 }: AccordionSolicitationCard) => {
+    const [confirmedOrderCard, setConfirmedOrderCard] = useState<number[]>([]);
+
     const handleToggleSelect = (itemId: number) => {
         setConfirmedOrder((prev) => (prev.includes(itemId) ? prev.filter((id) => id !== itemId) : [...prev, itemId]))
+        setConfirmedOrderCard((prev) => (prev.includes(itemId) ? prev.filter((id) => id !== itemId) : [...prev, itemId]))
     }
 
     const handleSelectAll = () => {
         if (solicitation.orders?.length) {
             setConfirmedOrder((prev) => [...prev, ...solicitation.orders.filter((order: number) => !prev.includes(order))])
+            setConfirmedOrderCard((prev) => [...prev, ...solicitation.orders.filter((order: number) => !prev.includes(order))])
+
         }
     }
 
-    const hasOrdersToConfirm = confirmedOrder.length > 0
+    const hasOrdersToConfirm = confirmedOrderCard.length > 0 && type == "order"
 
     return (
         <Accordion type="single" collapsible className="w-full">
@@ -73,11 +80,9 @@ export const AccordionSolicitationCard = ({
                 </AccordionTrigger>
 
                 <AccordionContent className="px-4 pb-4">
-                    <DialogFormOrder solicitation={solicitation.id} text="Cadastrar Pedido" variant="default" />
-
+                    {type == "order" && <DialogFormOrder solicitation={solicitation.id} text="Cadastrar Pedido" variant="default" />}
                     {hasOrdersToConfirm && <ConfirmOrdersDialog confirmedOrder={confirmedOrder} onUpdate={onUpdate} />}
-
-                    <SelectAllOrdersDialog onSelectAll={handleSelectAll} />
+                    {type == "order" && <SelectAllOrdersDialog onSelectAll={handleSelectAll} />}
 
                     <div className="mb-3 pt-2">
                         <h4 className="text-sm font-semibold text-gray-700 flex items-center gap-2">
@@ -89,10 +94,16 @@ export const AccordionSolicitationCard = ({
                     <div className="flex flex-col gap-3">
                         {solicitation.orderJoin?.map((item: any, index: number) => (
                             <OrderItemCard
+                                type={type}
                                 key={index}
                                 item={item}
                                 isSelected={confirmedOrder.includes(item.id)}
-                                onToggleSelect={() => handleToggleSelect(item.id)}
+                                onToggleSelect={() => {
+                                    if (type == "order" && item.status !== Status_String.ConfirmSale || item.status === Status_String.PendingPurchase)
+                                        handleToggleSelect(item.id)
+                                    else if (type == "account" && item.status === Status_String.ConfirmSale)
+                                        handleToggleSelect(item.id)
+                                }}
                             />
                         ))}
 

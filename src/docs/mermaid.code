@@ -1,0 +1,47 @@
+flowchart LR
+
+%% ---------- LANE 1: SOLICITATION ----------
+subgraph S[SOLICITATION]
+    S1["Início: Criar Solicitation<br/>• Usuário abre uma nova solicitação<br/>• Pode conter N pedidos independentes<br/>• solicitation.orders = (empty)"]
+    S2["Adicionar Order na Solicitation<br/>• Vincula ID da order ao array de orders"]
+end
+
+%% ---------- LANE 2: ORDER LIFECYCLE ----------
+subgraph O[ORDER]
+    O1["Criar Order<br/>status = Compra Pendente<br/>status_conference = null<br/>date_order = null<br/>date_purchase_order = null<br/>date_conference = null"]
+
+    O2["Compra Realizada<br/>Alterações:<br/>• status → Compra Realizada<br/>• date_order preenchido<br/>• Criar registro em Contas a Pagar"]
+
+    O3["Efetivar Compra<br/>Alterações:<br/>• status → Compra Quitada<br/>• date_purchase_order preenchido<br/>• status_conference → A Conferir"]
+
+    O4["Conferência Realizada<br/>Alterações:<br/>• status_conference → Conferido<br/>• date_conference preenchido"]
+
+    O5["Cliente desistiu<br/>Transformar em Pronta Entrega<br/>Alterações:<br/>• status → Pronta a Entrega<br/>• Desvincular client<br/>• Criar registro em Contas a Receber"]
+end
+
+%% ---------- LANE 3: CONTAS A PAGAR ----------
+subgraph CP[CONTAS A PAGAR]
+    CP1["Gerar Conta a Pagar<br/>Criado ao marcar Compra Realizada<br/>• Valor = cost_price * amount<br/>• Vinculado à Order"]
+    CP2["Baixa de Pagamento<br/>Ocorre quando status = Compra Quitada"]
+end
+
+%% ---------- LANE 4: CONFERÊNCIA ----------
+subgraph C[CONFERÊNCIA]
+    C1["Pedido aguardando conferência<br/>status_conference = A Conferir"]
+    C2["Conferência concluída<br/>status_conference = Conferido<br/>date_conference salvo"]
+end
+
+%% ---------- LANE 5: PRONTA ENTREGA ----------
+subgraph PE[PRONTA ENTREGA]
+    PE1["Transformação em Pronta Entrega<br/>status = Pronta a Entrega<br/>Order deixa de ter client"]
+    PE2["Gerar Conta a Receber<br/>Vinculada ao estoque de pronta entrega"]
+end
+
+%% ---------- FLUXO ----------
+S1 --> S2 --> O1
+O1 --> O2 --> CP1
+CP1 --> O3 --> CP2
+O3 --> C1 --> C2 --> O4
+
+%% Caminho alternativo: Cliente desistiu
+O1 --> O5 --> PE1 --> PE2
