@@ -1,11 +1,12 @@
 "use client"
 
-import type { Solicitation } from "@/app/home/orders/order.interface"
+import type { Order, Solicitation } from "@/app/home/orders/order.interface"
 import { Status, Status_String } from "@/constants/order-status"
 import { formatDate } from "@/functions/format-functions"
 import { getStatusColor } from "@/functions/style-functions"
 import { Calendar, Package } from "lucide-react"
 import { useState, type Dispatch, type SetStateAction } from "react"
+import { toast } from "sonner"
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "../ui/accordion"
 import {
     AlertDialog,
@@ -40,19 +41,54 @@ export const AccordionSolicitationCard = ({
     const [confirmedOrderCard, setConfirmedOrderCard] = useState<number[]>([]);
 
     const handleToggleSelect = (itemId: number) => {
+        const status = solicitation.orderJoin.find((value: Order) => value.id === itemId)?.status
+        if (type == "account" && status === Status_String.PendingPurchase) {
+            toast.warning("Essa ação não pode ser executada.", {
+                description: `O status do pedido é ${status}`,
+                closeButton: true,
+                duration: 5000
+            })
+            return;
+        }
         setConfirmedOrder((prev) => (prev.includes(itemId) ? prev.filter((id) => id !== itemId) : [...prev, itemId]))
         setConfirmedOrderCard((prev) => (prev.includes(itemId) ? prev.filter((id) => id !== itemId) : [...prev, itemId]))
     }
 
     const handleSelectAll = () => {
         if (solicitation.orders?.length) {
+            for (var i = 0; i < solicitation.orderJoin.length; i++) {
+                const actualOrder = solicitation.orderJoin[i]
+                if (actualOrder.status === Status_String.PendingPurchase) {
+                    toast.warning("Essa ação não pode ser executada.", {
+                        description: `O status do pedido: ${actualOrder.description} é ${actualOrder.status}`,
+                        closeButton: true,
+                        duration: 5000
+                    })
+                    return;
+                }
+            }
+
             setConfirmedOrder((prev) => [...prev, ...solicitation.orders.filter((order: number) => !prev.includes(order))])
             setConfirmedOrderCard((prev) => [...prev, ...solicitation.orders.filter((order: number) => !prev.includes(order))])
-
+            return true;
         }
     }
 
-    const hasOrdersToConfirm = confirmedOrderCard.length > 0 && type == "order"
+    const hasOrdersToConfirm = confirmedOrderCard.length > 0
+
+    var allConfirmed = true;
+
+    if (type == "account") {
+        allConfirmed = false;
+
+    } else if (type == "order") {
+        var value = solicitation.orderJoin?.length > 0 &&
+            solicitation.orderJoin.every((item: Order) => item.status === Status_String.ConfirmSale)
+
+        allConfirmed = value;
+    }
+
+
 
     return (
         <Accordion type="single" collapsible className="w-full">
@@ -82,7 +118,7 @@ export const AccordionSolicitationCard = ({
                 <AccordionContent className="px-4 pb-4">
                     {type == "order" && <DialogFormOrder solicitation={solicitation.id} text="Cadastrar Pedido" variant="default" />}
                     {hasOrdersToConfirm && <ConfirmOrdersDialog confirmedOrder={confirmedOrder} onUpdate={onUpdate} />}
-                    {type == "order" && <SelectAllOrdersDialog onSelectAll={handleSelectAll} />}
+                    {!allConfirmed && <SelectAllOrdersDialog onSelectAll={handleSelectAll} />}
 
                     <div className="mb-3 pt-2">
                         <h4 className="text-sm font-semibold text-gray-700 flex items-center gap-2">
@@ -116,7 +152,6 @@ export const AccordionSolicitationCard = ({
 }
 
 const ConfirmOrdersDialog = ({ confirmedOrder, onUpdate }: any) => {
-
     return (
         <AlertDialog>
             <AlertDialogTrigger asChild>
@@ -144,18 +179,29 @@ const ConfirmOrdersDialog = ({ confirmedOrder, onUpdate }: any) => {
 const SelectAllOrdersDialog = ({ onSelectAll }: any) => (
     <AlertDialog>
         <AlertDialogTrigger asChild>
-            <Button variant={"outline"} className="w-full mt-2" onClick={onSelectAll}>
+            <Button
+                variant="outline"
+                className="w-full mt-2"
+                onClick={(e) => {
+                    const canOpen = onSelectAll();
+                    if (!canOpen) {
+                        e.preventDefault();
+                    }
+                }}
+            >
                 Conferir todos os pedidos
             </Button>
         </AlertDialogTrigger>
+
         <AlertDialogContent>
             <AlertDialogHeader>
                 <AlertDialogTitle>Confirmar recebimento de pedidos?</AlertDialogTitle>
                 <AlertDialogDescription>
-                    Ao confirmar, todos os pedidos selecionados serão marcados como <strong>"Compra Realizada"</strong>. Essa ação
-                    indica que os produtos já foram recebidos e o status das solicitações será atualizado.
+                    Ao confirmar, todos os pedidos selecionados serão marcados como <strong>"Compra Realizada"</strong>.
+                    Essa ação indica que os produtos já foram recebidos e o status das solicitações será atualizado.
                 </AlertDialogDescription>
             </AlertDialogHeader>
+
             <AlertDialogFooter>
                 <AlertDialogCancel>Cancelar</AlertDialogCancel>
                 <AlertDialogAction>Confirmar</AlertDialogAction>
@@ -163,6 +209,7 @@ const SelectAllOrdersDialog = ({ onSelectAll }: any) => (
         </AlertDialogContent>
     </AlertDialog>
 )
+
 
 const EmptyState = () => (
     <div className="text-center py-8 text-gray-500">

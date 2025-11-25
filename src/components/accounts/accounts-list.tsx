@@ -104,6 +104,13 @@ export const AccountsList = ({
                 </div>
             </div> */}
 
+            <div className="top-0 bg-white border-b border-gray-200 px-4 py-3 mb-4 z-10">
+                <p className="text-sm text-gray-700">
+                    Clique nos cards em azul para selecionar os itens que deseja quitar.
+                    Ao confirmar, o status será atualizado para <strong>Compra Quitada</strong>.
+                </p>
+            </div>
+
             <div className="flex flex-col gap-4">
                 {solicitations.map((solicitation: Solicitation, idx: number) => (
                     <AccordionSolicitationCard
@@ -115,7 +122,7 @@ export const AccountsList = ({
                         type="account"
                     />
                 ))}
-            </div>
+            </div >
 
             <div className="mt-8 px-4">
                 <div className="bg-gray-50 rounded-lg p-4 text-center">
