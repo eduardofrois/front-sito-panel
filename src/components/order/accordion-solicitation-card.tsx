@@ -85,17 +85,27 @@ export const AccordionSolicitationCard = ({
 
     var allConfirmed = true;
 
-    if (type == "account") {
-        allConfirmed = false;
-
-    } else if (type == "order") {
+    if (type == "account") allConfirmed = false;
+    else if (type == "order") {
         var value = solicitation.orderJoin?.length > 0 &&
             solicitation.orderJoin.every((item: Order) => item.status === Status_String.ConfirmSale)
 
         allConfirmed = value;
     }
 
+    const checkQuited = (itemId: number) => {
+        const solicitationValue = solicitation.id === itemId ? solicitation : null;
+        if (solicitationValue?.orderJoin == null) return;
 
+        for (var i = 0; i < solicitationValue?.orderJoin.length; i++) {
+            const actualOrder = solicitation.orderJoin[i]
+
+        }
+
+        var isQuited = false;
+
+        return isQuited;
+    }
 
     return (
         <Accordion type="single" collapsible className="w-full">
