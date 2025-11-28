@@ -31,6 +31,13 @@ interface AccordionSolicitationCard {
     type: "order" | "account"
 }
 
+interface SelectAllOrdersDialogType {
+    onSelectAll: () => true | undefined
+    type: "order" | "account"
+    onUpdate: (orders: number[], value: number) => void
+    confirmedOrder: number[]
+}
+
 export const AccordionSolicitationCard = ({
     solicitation,
     confirmedOrder,
@@ -58,7 +65,7 @@ export const AccordionSolicitationCard = ({
         if (solicitation.orders?.length) {
             for (var i = 0; i < solicitation.orderJoin.length; i++) {
                 const actualOrder = solicitation.orderJoin[i]
-                if (actualOrder.status === Status_String.PendingPurchase) {
+                if (actualOrder.status === Status_String.PendingPurchase && type == "account") {
                     toast.warning("Essa ação não pode ser executada.", {
                         description: `O status do pedido: ${actualOrder.description} é ${actualOrder.status}`,
                         closeButton: true,
@@ -117,8 +124,8 @@ export const AccordionSolicitationCard = ({
 
                 <AccordionContent className="px-4 pb-4">
                     {type == "order" && <DialogFormOrder solicitation={solicitation.id} text="Cadastrar Pedido" variant="default" />}
-                    {hasOrdersToConfirm && <ConfirmOrdersDialog confirmedOrder={confirmedOrder} onUpdate={onUpdate} />}
-                    {!allConfirmed && <SelectAllOrdersDialog onSelectAll={handleSelectAll} />}
+                    {hasOrdersToConfirm && <ConfirmOrdersDialog confirmedOrder={confirmedOrder} onUpdate={onUpdate} type={type} />}
+                    {!allConfirmed && <SelectAllOrdersDialog onSelectAll={handleSelectAll} type={type} onUpdate={onUpdate} confirmedOrder={confirmedOrder} />}
 
                     <div className="mb-3 pt-2">
                         <h4 className="text-sm font-semibold text-gray-700 flex items-center gap-2">
@@ -151,7 +158,7 @@ export const AccordionSolicitationCard = ({
     )
 }
 
-const ConfirmOrdersDialog = ({ confirmedOrder, onUpdate }: any) => {
+const ConfirmOrdersDialog = ({ confirmedOrder, onUpdate, type }: any) => {
     return (
         <AlertDialog>
             <AlertDialogTrigger asChild>
@@ -169,46 +176,56 @@ const ConfirmOrdersDialog = ({ confirmedOrder, onUpdate }: any) => {
                 </AlertDialogHeader>
                 <AlertDialogFooter>
                     <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                    <AlertDialogAction onClick={() => onUpdate(confirmedOrder, Status.ConfirmSale)}>Confirmar</AlertDialogAction>
+                    <AlertDialogAction onClick={() => onUpdate(confirmedOrder, type == "order" ? Status.ConfirmSale : Status.PaidPurchase)}>Confirmar</AlertDialogAction>
                 </AlertDialogFooter>
             </AlertDialogContent>
         </AlertDialog>
     )
 }
 
-const SelectAllOrdersDialog = ({ onSelectAll }: any) => (
-    <AlertDialog>
-        <AlertDialogTrigger asChild>
-            <Button
-                variant="outline"
-                className="w-full mt-2"
-                onClick={(e) => {
-                    const canOpen = onSelectAll();
-                    if (!canOpen) {
-                        e.preventDefault();
-                    }
-                }}
-            >
-                Conferir todos os pedidos
-            </Button>
-        </AlertDialogTrigger>
+const SelectAllOrdersDialog = ({ onSelectAll, onUpdate, type, confirmedOrder }: SelectAllOrdersDialogType) => {
+    return (
+        <AlertDialog>
+            <AlertDialogTrigger asChild>
+                <Button
+                    variant="outline"
+                    className="w-full mt-2"
+                    onClick={(e) => {
+                        const canOpen = onSelectAll();
+                        if (!canOpen) {
+                            e.preventDefault();
+                        }
+                    }}
+                >
+                    Conferir todos os pedidos
+                </Button>
+            </AlertDialogTrigger>
 
-        <AlertDialogContent>
-            <AlertDialogHeader>
-                <AlertDialogTitle>Confirmar recebimento de pedidos?</AlertDialogTitle>
-                <AlertDialogDescription>
-                    Ao confirmar, todos os pedidos selecionados serão marcados como <strong>"Compra Realizada"</strong>.
-                    Essa ação indica que os produtos já foram recebidos e o status das solicitações será atualizado.
-                </AlertDialogDescription>
-            </AlertDialogHeader>
+            <AlertDialogContent>
+                <AlertDialogHeader>
+                    <AlertDialogTitle>Confirmar recebimento de pedidos?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                        Ao confirmar, todos os pedidos selecionados serão marcados como <strong>{type == "order" ? "Compra Realizada" : "Compra Quitada"}</strong>.
+                        {
+                            type == "order" ?
+                                "Essa ação indica que os produtos já foram recebidos e o status das solicitações será atualizado."
+                                : "Essa ação indica que todos os produtos já tiveram suas compras pagas e o status das solicitações será atualizado."
+                        }
+                    </AlertDialogDescription>
+                </AlertDialogHeader>
 
-            <AlertDialogFooter>
-                <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                <AlertDialogAction>Confirmar</AlertDialogAction>
-            </AlertDialogFooter>
-        </AlertDialogContent>
-    </AlertDialog>
-)
+                <AlertDialogFooter>
+                    <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                    <AlertDialogAction onClick={() =>
+                        onUpdate(confirmedOrder, type == "order" ? Status.ConfirmSale : Status.PaidPurchase)}
+                    >
+                        Confirmar
+                    </AlertDialogAction>
+                </AlertDialogFooter>
+            </AlertDialogContent>
+        </AlertDialog>
+    )
+}
 
 
 const EmptyState = () => (
