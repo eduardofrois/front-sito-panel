@@ -3,8 +3,13 @@ import api from "@/services/api";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
 
-async function getPendingPaid() {
-    const response = await api.get("/orders/pending");
+interface PaginationInterface {
+    pageNumber: number;
+    pageSize: number;
+}
+
+async function getPendingPaid(pageNumber: number, pageSize: number) {
+    const response = await api.get(`/orders/pending?pageNumber=${pageNumber}&pageSize=${pageSize}`);
 
     if (!response.data.flag) {
         toast.error(response.data.message)
@@ -13,9 +18,9 @@ async function getPendingPaid() {
     return response.data.data
 }
 
-export default function useQueryGetPendingPaid() {
+export default function useQueryGetPendingPaid({ pageNumber, pageSize }: PaginationInterface) {
      return useQuery({
-            queryKey: ["getAllOrders"],
-            queryFn: getPendingPaid
+            queryKey: ["getPendingPaidOrders", pageNumber, pageSize],
+            queryFn: () => getPendingPaid(pageNumber, pageSize)
         })
 }

@@ -14,6 +14,7 @@ interface iProps {
     setSelectedOrders: Dispatch<SetStateAction<number[]>>
     handleCardClick: (isSelected: boolean, order: Order) => void
     canSelectCard: (order: Order) => boolean
+    isUpdatingStatus?: boolean
 }
 
 export const AccountsList = ({
@@ -24,7 +25,8 @@ export const AccountsList = ({
     onUpdate,
     setSelectedOrders,
     handleCardClick,
-    canSelectCard
+    canSelectCard,
+    isUpdatingStatus = false
 }: iProps) => {
     const { solicitations, isLoadingSolicitations, refetchSolicitation, confirmedOrder, setConfirmedOrder } = useAccountsModel()
 
@@ -120,6 +122,7 @@ export const AccountsList = ({
                         setConfirmedOrder={setConfirmedOrder}
                         onUpdate={onUpdate}
                         type="account"
+                        isUpdatingStatus={isUpdatingStatus}
                     />
                 ))}
             </div >

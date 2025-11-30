@@ -17,8 +17,9 @@ interface AccordionSolicitationCardProps {
     solicitation: Solicitation;
     confirmedOrder: number[];
     setConfirmedOrder: Dispatch<SetStateAction<number[]>>;
-    onUpdate: (orders: number[], value: number) => void;
+    onUpdate: (orders: number[], value: number) => Promise<void>;
     type: "order" | "account";
+    isUpdatingStatus?: boolean;
 }
 
 export const AccordionSolicitationCard = ({
@@ -26,7 +27,8 @@ export const AccordionSolicitationCard = ({
     confirmedOrder,
     setConfirmedOrder,
     onUpdate,
-    type
+    type,
+    isUpdatingStatus = false
 }: AccordionSolicitationCardProps) => {
     const [itemsPerPage] = useState(15); // Quantidade de pedidos por página
     const [currentPage, setCurrentPage] = useState(1);
@@ -103,39 +105,45 @@ export const AccordionSolicitationCard = ({
     }
 
     // Ação de confirmação depende do módulo
-    function handleConfirm() {
+    async function handleConfirm() {
         if (!confirmedOrder.length) {
             toast.warning("Selecione ao menos um pedido.");
             return;
         }
-        // PEDIDOS: se selecionando 'compra', muda para Realizada; se 'conferencia', muda substatus para Conferido; se 'prontaEntrega', muda para Pronta Entrega
-        // CONTAS: quita
-        if (type === "order") {
-            const selectedOrders = solicitation.orderJoin?.filter(order => confirmedOrder.includes(order.id)) || [];
 
-            // Verifica se TODOS são para Pronta Entrega (já conferidos)
-            const isProntaEntrega = selectedOrders.every(order =>
-                order.status === Status_String.PaidPurchase &&
-                order.status_conference === Status_String.Checked
-            );
+        try {
+            // PEDIDOS: se selecionando 'compra', muda para Realizada; se 'conferencia', muda substatus para Conferido; se 'prontaEntrega', muda para Pronta Entrega
+            // CONTAS: quita
+            if (type === "order") {
+                const selectedOrders = solicitation.orderJoin?.filter(order => confirmedOrder.includes(order.id)) || [];
 
-            // Verifica se TODOS são para Conferência (quitados mas não conferidos)
-            const isConferencia = selectedOrders.every(order =>
-                order.status === Status_String.PaidPurchase &&
-                order.status_conference === Status_String.ToCheck
-            );
+                // Verifica se TODOS são para Pronta Entrega (já conferidos)
+                const isProntaEntrega = selectedOrders.every(order =>
+                    order.status === Status_String.PaidPurchase &&
+                    order.status_conference === Status_String.Checked
+                );
 
-            if (isProntaEntrega) {
-                onUpdate(confirmedOrder, Status.ReadyForDelivery); // Transforma em Pronta Entrega
-            } else if (isConferencia) {
-                onUpdate(confirmedOrder, Status.Checked); // Confirma conferência
-            } else {
-                onUpdate(confirmedOrder, Status.ConfirmSale); // Confirma compra
+                // Verifica se TODOS são para Conferência (quitados mas não conferidos)
+                const isConferencia = selectedOrders.every(order =>
+                    order.status === Status_String.PaidPurchase &&
+                    order.status_conference === Status_String.ToCheck
+                );
+
+                if (isProntaEntrega) {
+                    await onUpdate(confirmedOrder, Status.ReadyForDelivery); // Transforma em Pronta Entrega
+                } else if (isConferencia) {
+                    await onUpdate(confirmedOrder, Status.Checked); // Confirma conferência
+                } else {
+                    await onUpdate(confirmedOrder, Status.ConfirmSale); // Confirma compra
+                }
+            } else if (type === "account") {
+                await onUpdate(confirmedOrder, Status.PaidPurchase);  // Quita
             }
-        } else if (type === "account") {
-            onUpdate(confirmedOrder, Status.PaidPurchase);  // Quita
+            setConfirmedOrder([]);
+        } catch (error) {
+            console.error("Erro ao processar pagamento:", error);
+            toast.error("Erro ao processar pagamento. Tente novamente.");
         }
-        setConfirmedOrder([]);
     }
 
     // Filtro e paginação dos pedidos
@@ -285,9 +293,19 @@ export const AccordionSolicitationCard = ({
                                     <Button
                                         variant="default"
                                         onClick={handleConfirm}
+                                        disabled={isUpdatingStatus}
                                         className={`w-full sm:w-auto min-h-[44px] text-sm sm:text-base py-2.5 sm:py-3 ${nextStatus.color || ""}`}
                                     >
-                                        {nextStatus.text} ({confirmedOrder.length})
+                                        {isUpdatingStatus ? (
+                                            <>
+                                                <div className="h-4 w-4 mr-2 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                                                Processando...
+                                            </>
+                                        ) : (
+                                            <>
+                                                {nextStatus.text} ({confirmedOrder.length})
+                                            </>
+                                        )}
                                     </Button>
                                     <Button
                                         variant="outline"

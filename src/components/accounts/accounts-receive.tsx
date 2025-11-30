@@ -1,25 +1,28 @@
 "use client"
 
-import type { Order } from "@/app/home/orders/order.interface"
+import useMutateUpdatePaidPrice, { UpdatePaidPriceDto } from "@/app/home/accounts/hooks/useMutateUpdatePaidPrice"
+import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent } from "@/components/ui/card"
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
 import { Input } from "@/components/ui/input"
 import { Separator } from "@/components/ui/separator"
 import { formatCurrency, formatDate } from "@/functions/format-functions"
+import { getOrderCardStyles } from "@/functions/style-functions"
 import { zodResolver } from "@hookform/resolvers/zod"
-import { CalendarDays, CreditCard, DollarSign, Eye, EyeOff, Package, Search, User, X } from "lucide-react"
+import { useQueryClient } from "@tanstack/react-query"
+import { CalendarDays, CheckCircle2, ChevronLeft, ChevronRight, Package, User, X } from "lucide-react"
 import { useMemo, useState } from "react"
-import { useForm } from "react-hook-form"
+import { useForm, useWatch } from "react-hook-form"
 import { toast } from "sonner"
 import * as z from "zod"
 import { IsLoadingCard } from "../global/isloading-card"
 
 interface iProps {
   isLoadingPending: boolean
-  orders: Order[]
-  update: (dto: { order_id: number; paid_price: number }[]) => Promise<void>
-  isPending: boolean
+  orders: any[]
+  pagination: { pageIndex: number; pageSize: number }
+  setPagination: React.Dispatch<React.SetStateAction<{ pageIndex: number; pageSize: number }>>
 }
 
 const paymentSchema = z.object({
@@ -36,11 +39,11 @@ const paymentSchema = z.object({
 
 type PaymentFormData = z.infer<typeof paymentSchema>
 
-export const AccountsReceive = ({ isLoadingPending, orders, isPending, update }: iProps) => {
+export const AccountsReceive = ({ isLoadingPending, orders, pagination, setPagination }: iProps) => {
   const [selectedOrders, setSelectedOrders] = useState<Set<number>>(new Set())
-  const [visibleFields, setVisibleFields] = useState<Record<number, Set<string>>>({})
-  const [showAllSensitiveInfo, setShowAllSensitiveInfo] = useState(false)
-  const [searchFilter, setSearchFilter] = useState("")
+
+  const queryClient = useQueryClient()
+  const { mutateAsync: updatePaidPrice, isPending } = useMutateUpdatePaidPrice()
 
   const form = useForm<PaymentFormData>({
     resolver: zodResolver(paymentSchema),
@@ -49,42 +52,10 @@ export const AccountsReceive = ({ isLoadingPending, orders, isPending, update }:
     },
   })
 
-  const filteredOrders = useMemo(() => {
-    if (!searchFilter.trim()) return orders
-
-    const searchTerm = searchFilter.toLowerCase().trim()
-
-    return orders.filter((order) => {
-      const searchableFields = [
-        order.id?.toString(),
-        order.code,
-        order.description,
-        order.size,
-        order.amount?.toString(),
-        order.cost_price?.toString(),
-        order.sale_price?.toString(),
-        order.total_price?.toString(),
-        order.status,
-        order.date_creation_order,
-        order.tenant_id?.toString(),
-        order.brand,
-        order.date_order,
-        order.date_purchase_order,
-        order.client_infos?.client_id?.toString(),
-        order.client_infos?.client_name,
-        order.status_conference,
-        order.date_conference,
-        order.paid_price?.toString(),
-        formatCurrency(order.total_price - order.paid_price), // pending amount
-        formatDate(order.date_creation_order),
-      ]
-
-      return searchableFields.some((field) => field?.toLowerCase().includes(searchTerm))
-    })
-  }, [orders, searchFilter])
-
-  const calculatePendingAmount = (order: Order) => {
-    return order.total_price - order.paid_price
+  const calculatePendingAmount = (order: any) => {
+    const paidPrice = order.price_paid ?? 0
+    const totalPrice = order.total_price ?? 0
+    return totalPrice - paidPrice
   }
 
   const toggleOrderSelection = (orderId: number) => {
@@ -97,335 +68,315 @@ export const AccountsReceive = ({ isLoadingPending, orders, isPending, update }:
     setSelectedOrders(newSelected)
   }
 
-  const toggleFieldVisibility = (orderId: number, fieldName: string) => {
-    setVisibleFields((prev) => {
-      const current = prev[orderId] ?? new Set<string>()
-      const newSet = new Set(current)
-      if (newSet.has(fieldName)) {
-        newSet.delete(fieldName)
-      } else {
-        newSet.add(fieldName)
-      }
-      return { ...prev, [orderId]: newSet }
-    })
-  }
+  const totalPendingAmount = useMemo(() => {
+    return orders.reduce((sum, order) => sum + calculatePendingAmount(order), 0)
+  }, [orders])
 
-  const isFieldVisible = (orderId: number, fieldName: string) => {
-    return visibleFields[orderId]?.has(fieldName) ?? false
-  }
+  const watchedPayments = useWatch({
+    control: form.control,
+    name: "payments",
+  })
 
-  const shouldShowField = (orderId: number, fieldName: string) => {
-    return showAllSensitiveInfo || isFieldVisible(orderId, fieldName)
-  }
+  const totalSelectedAmount = useMemo(() => {
+    return Object.entries(watchedPayments || {}).reduce((sum, [orderId, payment]) => {
+      const amount = Number((payment as any)?.amount || 0)
+      return sum + amount
+    }, 0)
+  }, [watchedPayments])
 
   const onSubmit = async (data: PaymentFormData) => {
-    const payments = Object.entries(data.payments).map(([orderId, payment]) => ({
+    const payments: UpdatePaidPriceDto[] = Object.entries(data.payments).map(([orderId, payment]) => ({
       order_id: Number(orderId),
       paid_price: Number(payment.amount),
     }))
 
     try {
-      await update(payments)
+      await updatePaidPrice(payments)
 
-      toast("Pagamentos processados", {
+      toast.success("Pagamentos processados", {
         description: `${payments.length} pagamento(s) foram registrados com sucesso.`,
+      })
+
+      await queryClient.invalidateQueries({
+        queryKey: ["getPendingPaidOrders"],
       })
 
       form.reset()
       setSelectedOrders(new Set())
-      setShowAllSensitiveInfo(false)
-      setVisibleFields({})
     } catch (err) {
       toast.error("Erro ao processar pagamentos")
     }
   }
 
-  const clearFilter = () => {
-    setSearchFilter("")
+  if (isLoadingPending) return <IsLoadingCard />
+
+  const getPaymentProgress = (order: any) => {
+    const paidPrice = order.price_paid ?? 0
+    const totalPrice = order.total_price ?? 0
+    if (totalPrice === 0) return 0
+    const progress = (paidPrice / totalPrice) * 100
+    return Math.min(100, Math.max(0, progress))
   }
 
-  if (isLoadingPending) <IsLoadingCard />
-
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row gap-4">
-        <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
-          <Input
-            placeholder="Filtrar por código, cliente, descrição, valores..."
-            value={searchFilter}
-            onChange={(e) => setSearchFilter(e.target.value)}
-            className="pl-10 pr-10"
-          />
-          {searchFilter && (
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={clearFilter}
-              className="absolute right-1 top-1/2 transform -translate-y-1/2 h-8 w-8 p-0"
-            >
-              <X className="h-4 w-4" />
-            </Button>
-          )}
-        </div>
-        <Button variant="default" onClick={() => setShowAllSensitiveInfo((prev) => !prev)}>
-          {showAllSensitiveInfo ? "Ocultar tudo" : "Mostrar tudo"}
-        </Button>
-      </div>
+    <div className="space-y-4">
+      {/* Botão de processar pagamento no topo */}
+      {selectedOrders.size > 0 && (
+        <Card className="border-purple-200 bg-purple-50 shadow-sm sticky top-0 z-10">
+          <CardContent className="p-3 sm:p-4">
+            <div className="flex flex-col gap-3">
+              <div className="flex items-center gap-2 sm:gap-3">
+                <Badge variant="default" className="bg-purple-600 text-white text-xs sm:text-sm px-2 sm:px-2.5 py-1">
+                  {selectedOrders.size}
+                </Badge>
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs sm:text-sm font-semibold text-purple-900 truncate">
+                    {selectedOrders.size === 1 ? "Pedido selecionado" : "Pedidos selecionados"}
+                  </p>
+                  <p className="text-xs text-purple-700">
+                    Total: <span className="font-semibold text-purple-900">
+                      {formatCurrency(totalSelectedAmount)}
+                    </span>
+                  </p>
+                </div>
+              </div>
 
-      {searchFilter && (
-        <div className="text-sm text-muted-foreground">
-          {filteredOrders.length} de {orders.length} contas encontradas
-        </div>
+              <div className="flex flex-col sm:flex-row gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    setSelectedOrders(new Set())
+                    form.reset()
+                  }}
+                  className="w-full sm:w-auto"
+                >
+                  <X className="h-4 w-4 mr-1.5" />
+                  Cancelar
+                </Button>
+                <Button
+                  type="submit"
+                  form="payment-form"
+                  disabled={isPending || totalSelectedAmount <= 0}
+                  size="sm"
+                  className="w-full sm:w-auto bg-purple-600 hover:bg-purple-700 text-white"
+                >
+                  {isPending ? (
+                    <>
+                      <div className="h-3.5 w-3.5 mr-1.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                      Processando...
+                    </>
+                  ) : (
+                    <>
+                      <CheckCircle2 className="h-4 w-4 mr-1.5" />
+                      Processar Pagamentos
+                    </>
+                  )}
+                </Button>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
       )}
 
-      {filteredOrders.length === 0 ? (
+      {orders.length === 0 ? (
         <Card>
           <CardContent className="flex flex-col items-center justify-center py-12">
-            <CreditCard className="h-12 w-12 text-muted-foreground mb-4" />
-            {searchFilter ? (
-              <>
-                <h3 className="text-lg font-semibold mb-2">Nenhuma conta encontrada</h3>
-                <p className="text-muted-foreground text-center mb-4">
-                  Não encontramos contas que correspondam ao filtro "{searchFilter}".
-                </p>
-                <Button variant="outline" onClick={clearFilter}>
-                  Limpar filtro
-                </Button>
-              </>
-            ) : (
-              <>
-                <h3 className="text-lg font-semibold mb-2">Nenhuma conta pendente</h3>
-                <p className="text-muted-foreground text-center">Todos os pedidos foram pagos integralmente.</p>
-              </>
-            )}
+            <Package className="h-12 w-12 text-muted-foreground mb-4" />
+            <h3 className="text-lg font-semibold mb-2">Nenhuma conta pendente</h3>
+            <p className="text-muted-foreground text-center">Todos os pedidos foram pagos integralmente.</p>
           </CardContent>
         </Card>
       ) : (
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-            <div className="grid gap-4">
-              {filteredOrders.map((order) => {
+          <form id="payment-form" onSubmit={form.handleSubmit(onSubmit)} className="space-y-3">
+            <div className="grid gap-3">
+              {orders.map((order) => {
                 const pendingAmount = calculatePendingAmount(order)
                 const isSelected = selectedOrders.has(order.id)
+                const progress = getPaymentProgress(order)
+                const isFullyPaid = pendingAmount <= 0
+                const cardStyles = getOrderCardStyles(order, isSelected)
 
                 return (
                   <Card
                     key={order.id}
-                    className={`transition-all cursor-pointer ${isSelected ? "ring-2 ring-primary border-primary" : "hover:shadow-md"
-                      }`}
+                    className={`transition-all duration-150 cursor-pointer border-l-4 ${cardStyles.border} ${cardStyles.background} ${cardStyles.hover} ${isSelected ? "shadow-md" : "shadow-sm"} ${isFullyPaid ? "opacity-60" : ""}`}
                     onClick={() => toggleOrderSelection(order.id)}
                   >
-                    <CardHeader className="pb-3">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center space-x-3">
-                          <div className="flex items-center space-x-2">
-                            <Package className="h-4 w-4 text-muted-foreground" />
-                            <CardTitle className="text-lg">Pedido #{order.code}</CardTitle>
+                    <CardContent className="p-3 sm:p-4">
+                      <div className="space-y-3">
+                        {/* Informações principais */}
+                        <div className="space-y-2">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <div className="flex items-center gap-1.5">
+                              <Package className={`h-3.5 w-3.5 flex-shrink-0 ${isSelected ? "text-white/80" : cardStyles.text}`} />
+                              <span className={`font-semibold text-sm ${cardStyles.text}`}>#{order.code}</span>
+                            </div>
+                            {isFullyPaid && (
+                              <Badge variant="default" className="bg-green-100 text-green-800 border-green-200 text-xs h-5">
+                                <CheckCircle2 className="h-2.5 w-2.5 mr-1" />
+                                Pago
+                              </Badge>
+                            )}
+                            {isSelected && (
+                              <Badge variant="secondary" className="bg-white/20 text-white border-white/30 text-xs h-5">
+                                Selecionado
+                              </Badge>
+                            )}
                           </div>
-                        </div>
-                        <div className="text-right">
-                          <p className="text-sm text-muted-foreground">Valor pendente</p>
-                          <p className="text-lg font-bold text-destructive flex items-center gap-2">
-                            {shouldShowField(order.id, "pendingAmount") ? formatCurrency(pendingAmount) : "R$ ••••"}
-                            <Button
-                              type="button"
-                              variant="ghost"
-                              size="sm"
-                              className="h-4 w-4 p-0"
-                              onClick={(e) => {
-                                e.stopPropagation()
-                                toggleFieldVisibility(order.id, "pendingAmount")
-                              }}
-                            >
-                              {isFieldVisible(order.id, "pendingAmount") ? (
-                                <EyeOff className="h-3 w-3 text-gray-500" />
-                              ) : (
-                                <Eye className="h-3 w-3 text-gray-500" />
-                              )}
-                            </Button>
-                          </p>
-                        </div>
-                      </div>
 
-                      <CardDescription className="flex items-center space-x-4">
-                        <span className="flex items-center space-x-1">
-                          <User className="h-3 w-3" />
-                          <span>{order?.client_infos?.client_name}</span>
-                        </span>
-                        <span className="flex items-center space-x-1">
-                          <CalendarDays className="h-3 w-3" />
-                          <span>{formatDate(order.date_creation_order)}</span>
-                        </span>
-                      </CardDescription>
-                    </CardHeader>
+                          <div className={`space-y-1.5 text-xs ${isSelected ? "text-white/80" : "text-muted-foreground"}`}>
+                            <div className="flex items-center gap-1.5 flex-wrap">
+                              <User className={`h-3 w-3 flex-shrink-0 ${isSelected ? "text-white/70" : "text-muted-foreground"}`} />
+                              <span className={`truncate ${isSelected ? "text-white/90" : ""}`}>{order?.clientJoin?.name || order?.client_infos?.client_name || "Cliente não informado"}</span>
+                            </div>
+                            <div className="flex items-center gap-1.5 flex-wrap">
+                              <CalendarDays className={`h-3 w-3 flex-shrink-0 ${isSelected ? "text-white/70" : "text-muted-foreground"}`} />
+                              <span>{formatDate(order.date_creation_order)}</span>
+                            </div>
+                            <div className={isSelected ? "text-white/80" : ""}>
+                              {order.description || "Sem descrição"} • {order.size} • Qtd: {order.amount}
+                            </div>
+                          </div>
 
-                    <CardContent className="pt-0">
-                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-                        <div className="space-y-1">
-                          <p className="text-sm font-medium">Produto</p>
-                          <p className="text-sm text-muted-foreground">{order.description || "Sem descrição"}</p>
-                          <p className="text-xs text-muted-foreground">
-                            Tamanho: {order.size} | Qtd: {order.amount}
-                          </p>
+                          {/* Barra de progresso compacta */}
+                          {!isFullyPaid && (
+                            <div className="flex items-center gap-2">
+                              <div className={`flex-1 rounded-full h-1.5 overflow-hidden ${isSelected ? "bg-white/20" : "bg-muted"}`}>
+                                <div
+                                  className={`h-full transition-all duration-300 ${isSelected ? "bg-white/60" : "bg-green-500"}`}
+                                  style={{ width: `${progress}%` }}
+                                />
+                              </div>
+                              <span className={`text-xs min-w-[35px] text-right ${isSelected ? "text-white/80" : "text-muted-foreground"}`}>{Math.round(progress)}%</span>
+                            </div>
+                          )}
                         </div>
 
-                        <div className="space-y-1">
-                          <p className="text-sm font-medium">Valores</p>
-                          <div className="space-y-1">
-                            <div className="flex justify-between text-sm items-center">
-                              <span>Total:</span>
-                              <span className="flex items-center gap-2">
-                                {shouldShowField(order.id, "totalAmount")
-                                  ? formatCurrency(order.total_price)
-                                  : "R$ ••••"}
-                                <Button
-                                  type="button"
-                                  variant="ghost"
-                                  size="sm"
-                                  className="h-4 w-4 p-0"
-                                  onClick={(e) => {
-                                    e.stopPropagation()
-                                    toggleFieldVisibility(order.id, "totalAmount")
-                                  }}
-                                >
-                                  {isFieldVisible(order.id, "totalAmount") ? (
-                                    <EyeOff className="h-3 w-3 text-gray-500" />
-                                  ) : (
-                                    <Eye className="h-3 w-3 text-gray-500" />
-                                  )}
-                                </Button>
-                              </span>
-                            </div>
-                            <div className="flex justify-between text-sm items-center">
-                              <span>Pago:</span>
-                              <span className="flex items-center gap-2 text-green-600">
-                                {shouldShowField(order.id, "paidAmount") ? formatCurrency(order.paid_price) : "R$ ••••"}
-                                <Button
-                                  type="button"
-                                  variant="ghost"
-                                  size="sm"
-                                  className="h-4 w-4 p-0"
-                                  onClick={(e) => {
-                                    e.stopPropagation()
-                                    toggleFieldVisibility(order.id, "paidAmount")
-                                  }}
-                                >
-                                  {isFieldVisible(order.id, "paidAmount") ? (
-                                    <EyeOff className="h-3 w-3 text-gray-500" />
-                                  ) : (
-                                    <Eye className="h-3 w-3 text-gray-500" />
-                                  )}
-                                </Button>
-                              </span>
-                            </div>
-                            <Separator />
-                            <div className="flex justify-between text-sm font-medium items-center">
-                              <span>Pendente:</span>
-                              <span className="flex items-center gap-2 text-destructive">
-                                {shouldShowField(order.id, "pendingAmount") ? formatCurrency(pendingAmount) : "R$ ••••"}
-                                <Button
-                                  type="button"
-                                  variant="ghost"
-                                  size="sm"
-                                  className="h-4 w-4 p-0"
-                                  onClick={(e) => {
-                                    e.stopPropagation()
-                                    toggleFieldVisibility(order.id, "pendingAmount")
-                                  }}
-                                >
-                                  {isFieldVisible(order.id, "pendingAmount") ? (
-                                    <EyeOff className="h-3 w-3 text-gray-500" />
-                                  ) : (
-                                    <Eye className="h-3 w-3 text-gray-500" />
-                                  )}
-                                </Button>
-                              </span>
-                            </div>
+                        {/* Valores - empilhados em mobile, lado a lado em desktop */}
+                        <div className={`grid grid-cols-3 gap-2 sm:gap-4 sm:flex sm:items-center sm:justify-end border-t pt-3 ${isSelected ? "border-white/20" : "border-border"}`}>
+                          <div className="text-center sm:text-right space-y-0.5">
+                            <p className={`text-[10px] sm:text-xs ${isSelected ? "text-white/70" : "text-muted-foreground"}`}>Total</p>
+                            <p className={`font-semibold text-xs sm:text-sm break-words ${cardStyles.text}`}>{formatCurrency(order.total_price ?? 0)}</p>
+                          </div>
+                          <Separator orientation="vertical" className={`h-8 hidden sm:block ${isSelected ? "bg-white/20" : ""}`} />
+                          <div className="text-center sm:text-right space-y-0.5">
+                            <p className={`text-[10px] sm:text-xs ${isSelected ? "text-white/70" : "text-muted-foreground"}`}>Pago</p>
+                            <p className={`font-semibold text-xs sm:text-sm break-words ${isSelected ? "text-white" : "text-green-600"}`}>{formatCurrency(order.price_paid ?? 0)}</p>
+                          </div>
+                          <Separator orientation="vertical" className={`h-8 hidden sm:block ${isSelected ? "bg-white/20" : ""}`} />
+                          <div className="text-center sm:text-right space-y-0.5">
+                            <p className={`text-[10px] sm:text-xs ${isSelected ? "text-white/70" : "text-muted-foreground"}`}>Pendente</p>
+                            <p className={`font-bold text-sm sm:text-base break-words ${isSelected ? "text-white" : "text-destructive"}`}>{formatCurrency(pendingAmount)}</p>
                           </div>
                         </div>
 
+                        {/* Campo de input quando selecionado */}
                         {isSelected && (
-                          <div className="space-y-2">
+                          <div className={`border-t pt-3 mt-2 ${isSelected ? "border-white/20" : "border-border"}`}>
                             <FormField
                               control={form.control}
                               name={`payments.${order.id}.amount`}
                               render={({ field }) => (
                                 <FormItem>
-                                  <FormLabel className="flex items-center space-x-1">
-                                    <DollarSign className="h-3 w-3" />
-                                    <span>Valor a pagar</span>
+                                  <FormLabel className={`text-xs mb-1.5 block ${isSelected ? "text-white/90" : "text-muted-foreground"}`}>
+                                    Valor a receber
                                   </FormLabel>
-                                  <FormControl>
-                                    <Input
-                                      type="number"
-                                      step="0.01"
-                                      placeholder="0,00"
-                                      {...field}
-                                      onClick={(e) => e.stopPropagation()}
-                                      onChange={(e) => {
-                                        const value = Number(e.target.value)
-                                        if (value > pendingAmount) {
-                                          field.onChange(pendingAmount.toString())
-                                        } else {
-                                          field.onChange(e.target.value)
-                                        }
-                                        e.stopPropagation()
-                                      }}
-                                      max={pendingAmount}
-                                    />
-                                  </FormControl>
-                                  <FormDescription>Máximo: {formatCurrency(pendingAmount)}</FormDescription>
-                                  <FormMessage />
+                                  <div className="space-y-1.5">
+                                    <FormControl>
+                                      <div className="relative">
+                                        <span className={`absolute left-2.5 top-1/2 -translate-y-1/2 text-sm font-medium ${isSelected ? "text-white/70" : "text-muted-foreground"}`}>R$</span>
+                                        <Input
+                                          type="number"
+                                          step="0.01"
+                                          min="0"
+                                          placeholder="0,00"
+                                          {...field}
+                                          onClick={(e) => e.stopPropagation()}
+                                          onChange={(e) => {
+                                            const value = Number(e.target.value)
+                                            if (value > pendingAmount) {
+                                              field.onChange(pendingAmount.toString())
+                                              toast.warning("Valor máximo excedido", {
+                                                description: `O valor máximo é ${formatCurrency(pendingAmount)}`,
+                                              })
+                                            } else if (value < 0) {
+                                              field.onChange("0")
+                                            } else {
+                                              field.onChange(e.target.value)
+                                            }
+                                            e.stopPropagation()
+                                          }}
+                                          className={`pl-8 h-9 sm:h-10 text-sm font-semibold ${isSelected ? "bg-white/10 border-white/20 text-white placeholder:text-white/50" : ""}`}
+                                        />
+                                      </div>
+                                    </FormControl>
+                                    <FormDescription className={`text-xs ${isSelected ? "text-white/70" : ""}`}>
+                                      Máximo disponível: <span className={`font-semibold ${isSelected ? "text-white" : "text-primary"}`}>{formatCurrency(pendingAmount)}</span>
+                                    </FormDescription>
+                                  </div>
+                                  <FormMessage className="text-xs" />
                                 </FormItem>
                               )}
                             />
                           </div>
                         )}
                       </div>
-
-                      {!isSelected && (
-                        <div className="text-center py-2">
-                          <p className="text-sm text-muted-foreground">
-                            Clique para selecionar e definir valor do pagamento
-                          </p>
-                        </div>
-                      )}
                     </CardContent>
                   </Card>
                 )
               })}
             </div>
-
-            {selectedOrders.size > 0 && (
-              <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 p-5 border rounded-2xl shadow-sm bg-muted/50">
-                <div className="space-y-1">
-                  <p className="text-lg font-semibold">{selectedOrders.size} pedido(s) selecionado(s)</p>
-                  <p className="text-sm text-muted-foreground">Defina os valores e confirme os pagamentos</p>
-                </div>
-
-                <div className="flex flex-col sm:flex-row gap-3 w-full md:w-auto">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => {
-                      setSelectedOrders(new Set())
-                      form.reset()
-                      setShowAllSensitiveInfo(false)
-                      setVisibleFields({})
-                    }}
-                    className="flex-1 sm:flex-none"
-                  >
-                    Cancelar
-                  </Button>
-                  <Button type="submit" className="flex-1 sm:flex-none">
-                    Processar Pagamentos
-                  </Button>
-                </div>
-              </div>
-            )}
           </form>
         </Form>
+      )}
+
+      {/* Controles de paginação */}
+      {!isLoadingPending && orders.length > 0 && (
+        <div className="flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-4 pt-4 border-t">
+          <Button
+            variant="outline"
+            size="sm"
+            disabled={pagination.pageIndex <= 1 || isLoadingPending}
+            onClick={() =>
+              setPagination(prev => ({
+                ...prev,
+                pageIndex: Math.max(prev.pageIndex - 1, 1),
+              }))
+            }
+            className="w-full sm:w-auto h-9 sm:h-9"
+          >
+            <ChevronLeft className="h-4 w-4" />
+            <span className="ml-1">Anterior</span>
+          </Button>
+
+          <div className="flex items-center gap-2 px-3 sm:px-4 py-2 text-xs sm:text-sm font-medium text-muted-foreground border rounded-lg bg-muted/30 h-9">
+            <span>Página {pagination.pageIndex}</span>
+            {orders.length === pagination.pageSize && (
+              <span className="text-[10px] sm:text-xs text-muted-foreground hidden sm:inline">
+                ({pagination.pageSize} por página)
+              </span>
+            )}
+          </div>
+
+          <Button
+            variant="outline"
+            size="sm"
+            disabled={orders.length < pagination.pageSize || isLoadingPending}
+            onClick={() =>
+              setPagination(prev => ({
+                ...prev,
+                pageIndex: prev.pageIndex + 1,
+              }))
+            }
+            className="w-full sm:w-auto h-9 sm:h-9"
+          >
+            <span className="mr-1">Próxima</span>
+            <ChevronRight className="h-4 w-4" />
+          </Button>
+        </div>
       )}
     </div>
   )

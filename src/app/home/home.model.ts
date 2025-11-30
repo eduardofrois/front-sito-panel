@@ -1,5 +1,6 @@
 import api from "@/services/api";
 import { deleteCookie, getCookie } from "cookies-next";
+import Cookies from "js-cookie";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
@@ -24,11 +25,26 @@ export const useHomeModel = () => {
 
     const exitFunction = async (e: any) => {
         e.preventDefault();
-        await api.post("/user/logout")
+        try {
+            await api.post("/user/logout")
+        } catch (error) {
+            console.error("Erro ao fazer logout:", error);
+        }
 
+        // Deletar cookies usando cookies-next
         deleteCookie("UN");
         deleteCookie("UID");
         deleteCookie("accessToken");
+        deleteCookie("UP");
+        deleteCookie("UU");
+
+        // Deletar cookies usando js-cookie (para garantir que todos sejam removidos)
+        Cookies.remove("UN");
+        Cookies.remove("UID");
+        Cookies.remove("accessToken");
+        Cookies.remove("UP");
+        Cookies.remove("UU");
+
         router.push("/");
     }
 

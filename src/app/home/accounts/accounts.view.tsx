@@ -11,7 +11,7 @@ type AccountsViewProps = ReturnType<typeof useAccountsModel>
 
 export const AccountsView = (props: AccountsViewProps) => {
     const { data, isLoading, selectedOrders, setSelectedOrders, totalValueToPay, onUpdate, handleCardClick, canSelectCard, firstSelectedOrder, isLoadingPending,
-        ordersPending, isPending, updatePaidPrice, isLoadingSolicitations, solicitations } = props
+        ordersPending, isLoadingSolicitations, solicitations, isUpdatingStatus, paginationPending, setPaginationPending } = props
 
     if (isLoadingSolicitations) return <IsLoadingCard />
 
@@ -43,15 +43,16 @@ export const AccountsView = (props: AccountsViewProps) => {
                         selectedOrders={selectedOrders}
                         setSelectedOrders={setSelectedOrders}
                         totalValueToPay={totalValueToPay}
+                        isUpdatingStatus={isUpdatingStatus}
                     />
                 </TabsContent>
 
                 <TabsContent value="accounts-receive" className="mt-0 p-4 sm:p-6">
                     <AccountsReceive
                         isLoadingPending={isLoadingPending}
-                        orders={ordersPending}
-                        isPending={isPending}
-                        update={updatePaidPrice}
+                        orders={ordersPending || []}
+                        pagination={paginationPending}
+                        setPagination={setPaginationPending}
                     />
                 </TabsContent>
             </Tabs>

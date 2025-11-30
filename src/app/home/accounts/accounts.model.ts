@@ -6,7 +6,6 @@ import useMutationUpdateStatusOrder from "../orders/hooks/mutates/useMutateUpdat
 import useQueryGetAllSolicitations from "../orders/hooks/useQueryGetAllSolicitations"
 import useQueryGetOrdersByStatus from "../orders/hooks/useQueryGetOrdersByStatus"
 import { Order } from "../orders/order.interface"
-import useMutateUpdatePaidPrice from "./hooks/useMutateUpdatePaidPrice"
 import useQueryGetClients from "./hooks/useQueryGetClients"
 
 export const useAccountsModel = () => {
@@ -14,13 +13,19 @@ export const useAccountsModel = () => {
         pageIndex: 1,
         pageSize: 10,
     });
+    const [paginationPending, setPaginationPending] = useState({
+        pageIndex: 1,
+        pageSize: 10,
+    });
     const [confirmedOrder, setConfirmedOrder] = useState<number[]>([])
 
     const { data, isLoading } = useQueryGetOrdersByStatus(Status.MoreThenOne)
     const { data: clients, isLoading: isLoadingClients } = useQueryGetClients()
-    const { data: ordersPending, isLoading: isLoadingPending } = useQueryGetPendingPaid()
-    const { mutateAsync } = useMutationUpdateStatusOrder();
-    const { mutateAsync: update, isPending } = useMutateUpdatePaidPrice();
+    const { data: ordersPending, isLoading: isLoadingPending } = useQueryGetPendingPaid({
+        pageNumber: paginationPending.pageIndex,
+        pageSize: paginationPending.pageSize
+    })
+    const { mutateAsync, isPending: isUpdatingStatus } = useMutationUpdateStatusOrder();
 
     const { data: solicitations, isLoading: isLoadingSolicitations, refetch: refetchSolicitation } = useQueryGetAllSolicitations({ pageNumber: pagination.pageIndex, pageSize: pagination.pageSize });
 
@@ -39,19 +44,17 @@ export const useAccountsModel = () => {
     async function onUpdate(orders: number[], value: number) {
         await mutateAsync({ orders: orders, value: value })
         setSelectedOrders([])
-        queryClient.invalidateQueries({
+        setConfirmedOrder([])
+        // Invalidar todas as queries relacionadas
+        await queryClient.invalidateQueries({
             queryKey: ["getOrdersByStatus"],
-            exact: true
         })
+        await queryClient.invalidateQueries({
+            queryKey: ["getAllSolicitations"],
+        })
+        await refetchSolicitation()
     }
 
-    async function updatePaidPrice(dto: { order_id: number, paid_price: number }[]) {
-        await update(dto)
-        queryClient.invalidateQueries({
-            queryKey: ["getAllOrders"],
-            exact: true
-        })
-    }
 
     const handleCardClick = (isSelected: boolean, order: Order) => {
         setFirstSelectedOrder(order)
@@ -93,8 +96,9 @@ export const useAccountsModel = () => {
         firstSelectedOrder,
         clients, isLoadingClients,
         ordersPending, isLoadingPending,
-        isPending, updatePaidPrice,
         solicitations, isLoadingSolicitations, refetchSolicitation,
-        confirmedOrder, setConfirmedOrder
+        confirmedOrder, setConfirmedOrder,
+        isUpdatingStatus,
+        paginationPending, setPaginationPending
     }
 }

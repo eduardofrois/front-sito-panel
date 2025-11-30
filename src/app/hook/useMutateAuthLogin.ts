@@ -41,6 +41,11 @@ export function useMutateLogin() {
                 duration: 5000,
             });
             setCookieLoggedUser(data.data)
+            
+            // O accessToken é definido automaticamente pelo backend via Set-Cookie
+            // quando withCredentials: true está habilitado
+            // Não precisamos salvar manualmente aqui
+            
             router.push("/home")
         },
         onError: (error) => {
