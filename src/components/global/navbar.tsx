@@ -36,28 +36,28 @@ const NavBar = ({ exitFunction }: iProps) => {
         <div className="flex items-start justify-start h-full">
             <Drawer direction="left" open={abrirDrawer} onClose={toggleDrawer}>
                 <DrawerContent className="overflow-x-hidden overflow-y-auto bg-white max-w-xs w-full">
-                    <DrawerHeader>
-                        <Button variant="ghost" className="w-fit h-fit" onClick={toggleDrawer}>
-                            <X />
+                    <DrawerHeader className="px-3 sm:px-4">
+                        <Button variant="ghost" className="w-fit h-fit min-h-[44px] min-w-[44px] p-2" onClick={toggleDrawer}>
+                            <X className="w-5 h-5" />
                         </Button>
-                        <DrawerTitle className="max-sm:text-center sm:pl-6 text-lg" justify-center>Menu</DrawerTitle>
+                        <DrawerTitle className="text-center sm:text-left sm:pl-6 text-base sm:text-lg">Menu</DrawerTitle>
                     </DrawerHeader>
 
-                    <div className="px-4 py-2 space-y-2">
+                    <div className="px-3 sm:px-4 py-2 space-y-2">
                         {modules.map((module) => {
                             const Icon = module.icon;
                             return (
                                 <button
                                     key={module.id}
                                     onClick={() => handleNavigation(module.route)}
-                                    className="w-full flex items-center gap-3 p-3 rounded-lg hover:bg-slate-100 transition-all text-left"
+                                    className="w-full flex items-center gap-2 sm:gap-3 p-3 sm:p-4 rounded-lg hover:bg-slate-100 transition-all text-left touch-manipulation min-h-[56px]"
                                 >
-                                    <div className={`p-2 rounded-md ${module.color}`}>
-                                        <Icon className="w-5 h-5 text-purple-600" />
+                                    <div className={`p-2 rounded-md ${module.color} flex-shrink-0`}>
+                                        <Icon className="w-5 h-5 sm:w-6 sm:h-6 text-purple-600" />
                                     </div>
-                                    <div className="flex flex-col">
-                                        <span className="text-sm font-medium">{module.title}</span>
-                                        <span className="text-xs text-slate-500">
+                                    <div className="flex flex-col min-w-0">
+                                        <span className="text-sm sm:text-base font-medium truncate">{module.title}</span>
+                                        <span className="text-xs sm:text-sm text-slate-500 line-clamp-2">
                                             {module.description}
                                         </span>
                                     </div>
@@ -66,29 +66,29 @@ const NavBar = ({ exitFunction }: iProps) => {
                         })}
                     </div>
 
-                    <DrawerFooter className="mt-auto px-4 py-4 border-t space-y-3">
+                    <DrawerFooter className="mt-auto px-3 sm:px-4 py-3 sm:py-4 border-t space-y-2 sm:space-y-3">
                         <Link
                             href="/"
                             onClick={exitFunction}
-                            className="flex items-center gap-3 text-sm text-slate-600 hover:text-red-600 transition"
+                            className="flex items-center gap-2 sm:gap-3 text-sm sm:text-base text-slate-600 hover:text-red-600 transition min-h-[44px] px-2 py-2 rounded-lg hover:bg-red-50"
                         >
-                            <LogOut className="w-5 h-5" />
+                            <LogOut className="w-5 h-5 flex-shrink-0" />
                             Sair
                         </Link>
-                        <div className="text-center text-xs text-slate-400 italic">
+                        <div className="text-center text-xs sm:text-sm text-slate-400 italic px-2">
                             Versão: {process.env.version}
                         </div>
                     </DrawerFooter>
                 </DrawerContent>
 
                 <DrawerTrigger asChild className="md:h-full">
-                    <div className="md:h-full md:w-full max-md:absolute max-md:top-4 max-md:left-2 max-md:rounded-lg md:p-4">
+                    <div className="md:h-full md:w-full max-md:absolute max-md:top-3 max-md:left-2 max-md:rounded-lg md:p-4">
                         <Button
                             onClick={toggleDrawer}
                             variant="ghost"
-                            className="hover:bg-white/20 rounded-md p-2"
+                            className="hover:bg-white/20 rounded-md p-2 min-h-[44px] min-w-[44px]"
                         >
-                            <Menu className="text-white size-5" />
+                            <Menu className="text-white size-5 sm:size-6" />
                         </Button>
                     </div>
                 </DrawerTrigger>

@@ -7,21 +7,11 @@ type OrdersViewProps = ReturnType<typeof useOrdersModel>
 
 export const OrdersView = (props: OrdersViewProps) => {
   const {
-    onSubmit,
-    form,
-    addToList,
-    valuesForm,
-    isPending,
     data,
     isLoading,
     confirmedOrder,
     setConfirmedOrder,
     onUpdate,
-    showAllSensitiveInfo,
-    setShowAllSensitiveInfo,
-    toggleFieldVisibility,
-    isFieldVisible,
-    shouldShowField,
     isLoadingSolicitations, solicitations,
     pagination, setPagination
   } = props
@@ -36,11 +26,6 @@ export const OrdersView = (props: OrdersViewProps) => {
         confirmedOrder={confirmedOrder}
         setConfirmedOrder={setConfirmedOrder}
         onUpdate={onUpdate}
-        showAllSensitiveInfo={showAllSensitiveInfo}
-        setShowAllSensitiveInfo={setShowAllSensitiveInfo}
-        toggleFieldVisibility={toggleFieldVisibility}
-        isFieldVisible={isFieldVisible}
-        shouldShowField={shouldShowField}
         pagination={pagination}
         setPagination={setPagination}
       />

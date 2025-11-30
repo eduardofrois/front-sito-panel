@@ -40,16 +40,16 @@ export function DialogFormOrder({ solicitation, text, variant }: iProps) {
                     <Button className="w-full" variant={variant}>{text}</Button>
                 </DialogTrigger>
 
-                <DialogContent className="max-h-[90vh] w-full max-w-4xl flex flex-col gap-0 p-0">
-                    <DialogHeader className="px-6 pt-6 pb-4 border-b">
-                        <DialogTitle className="text-xl">
+                <DialogContent className="w-full max-w-4xl flex flex-col gap-0 p-0 h-auto max-h-[calc(100vh-1rem)] sm:max-h-[90vh]">
+                    <DialogHeader className="px-3 sm:px-4 md:px-6 pt-4 sm:pt-6 pb-3 sm:pb-4 border-b flex-shrink-0">
+                        <DialogTitle className="text-lg sm:text-xl">
                             {valuesForm.length === 0 ? "Novo Pedido" : "Adicionar Outro Pedido"}
                         </DialogTitle>
-                        <DialogDescription>Preencha as informações do produto para adicionar à lista</DialogDescription>
+                        <DialogDescription className="text-xs sm:text-sm">Preencha as informações do produto para adicionar à lista</DialogDescription>
                     </DialogHeader>
 
-                    <div className="overflow-y-auto flex-1 px-6 py-6">
-                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                    <div className="overflow-y-auto flex-1 min-h-0 px-3 sm:px-4 md:px-6 py-4 sm:py-6 overscroll-contain">
+                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 md:gap-8">
                             <div>
                                 <h3 className="text-sm font-semibold text-gray-700 mb-4 uppercase tracking-wide">Dados do Produto</h3>
                                 <Form {...form}>
@@ -219,10 +219,10 @@ export function DialogFormOrder({ solicitation, text, variant }: iProps) {
                                             )}
                                         />
 
-                                        <div className="flex gap-2 pt-4">
+                                        <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 pt-4">
                                             <Button
                                                 type="button"
-                                                className="flex-1 h-9 text-sm bg-purple-600 hover:bg-purple-700"
+                                                className="flex-1 min-h-[44px] text-sm sm:text-base bg-purple-600 hover:bg-purple-700"
                                                 disabled={form.formState.isSubmitting}
                                                 onClick={() => addToList()}
                                             >
@@ -231,7 +231,7 @@ export function DialogFormOrder({ solicitation, text, variant }: iProps) {
                                             <Button
                                                 type="button"
                                                 variant="outline"
-                                                className="flex-1 h-9 text-sm bg-transparent"
+                                                className="flex-1 min-h-[44px] text-sm sm:text-base bg-transparent"
                                                 onClick={() => form.reset()}
                                             >
                                                 Limpar
@@ -250,7 +250,7 @@ export function DialogFormOrder({ solicitation, text, variant }: iProps) {
                                         <p className="text-gray-500 text-sm">Nenhum pedido adicionado ainda</p>
                                     </div>
                                 ) : (
-                                    <div className="space-y-3 max-h-96 overflow-y-auto pr-2">
+                                    <div className="space-y-3 max-h-[300px] sm:max-h-96 overflow-y-auto pr-2 overscroll-contain">
                                         {valuesForm.map((order, index) => (
                                             <div
                                                 key={index}
@@ -303,40 +303,42 @@ export function DialogFormOrder({ solicitation, text, variant }: iProps) {
                         </div>
                     </div>
 
-                    <div className="border-t px-6 py-4 bg-gray-50 flex gap-2">
+                    <div className="border-t px-3 sm:px-4 md:px-6 py-3 sm:py-4 bg-gray-50 flex flex-col sm:flex-row gap-2 sm:gap-3 flex-shrink-0">
                         {valuesForm.length > 0 && (
-                            <div className="flex-1 flex items-center text-sm">
+                            <div className="flex-1 flex items-center text-xs sm:text-sm">
                                 <span className="text-gray-600">
                                     Total:{" "}
-                                    <span className="font-bold text-purple-600 text-lg">
+                                    <span className="font-bold text-purple-600 text-base sm:text-lg">
                                         R$ {valuesForm.reduce((sum, order) => sum + Number(order.sale_price * order.amount || 0), 0).toFixed(2)}
                                     </span>
                                 </span>
                             </div>
                         )}
-                        <Button
-                            type="button"
-                            variant="outline"
-                            className="h-9 bg-transparent"
-                            onClick={() => {
-                                setValuesForm([])
-                                form.reset()
-                            }}
-                        >
-                            Cancelar Tudo
-                        </Button>
-                        {valuesForm.length > 0 && (
+                        <div className="flex gap-2 sm:gap-3 w-full sm:w-auto">
                             <Button
                                 type="button"
-                                className="h-9 bg-green-600 hover:bg-green-700"
-                                disabled={isPendingAddOrderAndSolicitation}
-                                onClick={() => formSubmit()}
+                                variant="outline"
+                                className="flex-1 sm:flex-none min-h-[44px] text-sm sm:text-base bg-transparent"
+                                onClick={() => {
+                                    setValuesForm([])
+                                    form.reset()
+                                }}
                             >
-                                {isPendingAddOrderAndSolicitation
-                                    ? "Salvando..."
-                                    : `Salvar ${valuesForm.length} ${valuesForm.length === 1 ? "Pedido" : "Pedidos"}`}
+                                Cancelar Tudo
                             </Button>
-                        )}
+                            {valuesForm.length > 0 && (
+                                <Button
+                                    type="button"
+                                    className="flex-1 sm:flex-none min-h-[44px] text-sm sm:text-base bg-green-600 hover:bg-green-700"
+                                    disabled={isPendingAddOrderAndSolicitation}
+                                    onClick={() => formSubmit()}
+                                >
+                                    {isPendingAddOrderAndSolicitation
+                                        ? "Salvando..."
+                                        : `Salvar ${valuesForm.length} ${valuesForm.length === 1 ? "Pedido" : "Pedidos"}`}
+                                </Button>
+                            )}
+                        </div>
                     </div>
                 </DialogContent>
             </form>

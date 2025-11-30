@@ -1,12 +1,11 @@
 "use client"
 
 import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Switch } from "@/components/ui/switch"
-import { Eye, EyeOff, Search } from "lucide-react"
+import { Info, Search } from "lucide-react"
 import type { Dispatch, SetStateAction } from "react"
 import { useMemo, useState } from "react"
 import type { Order, Solicitation } from "../../app/home/orders/order.interface"
+import { Status_String } from "@/constants/order-status"
 import { IsLoadingCard } from "../global/isloading-card"
 import { NotFoundOrder } from "../global/not-found-order"
 import { Button } from "../ui/button"
@@ -23,11 +22,6 @@ interface iProps {
   confirmedOrder: number[]
   setConfirmedOrder: Dispatch<SetStateAction<number[]>>
   onUpdate: (orders: number[], value: number) => void
-  showAllSensitiveInfo: boolean
-  setShowAllSensitiveInfo: (show: boolean) => void
-  toggleFieldVisibility: (orderId: number, fieldName: string) => void
-  isFieldVisible: (orderId: number, fieldName: string) => boolean
-  shouldShowField: (orderId: number, fieldName: string) => boolean
   pagination: { pageIndex: number; pageSize: number };
   setPagination: Dispatch<SetStateAction<{ pageIndex: number; pageSize: number }>>
 }
@@ -39,11 +33,6 @@ export const ShoppingView = ({
   confirmedOrder,
   setConfirmedOrder,
   onUpdate,
-  showAllSensitiveInfo,
-  setShowAllSensitiveInfo,
-  toggleFieldVisibility,
-  isFieldVisible,
-  shouldShowField,
   isLoadingSolicitations,
   pagination, setPagination
 }: iProps) => {
@@ -95,60 +84,102 @@ export const ShoppingView = ({
   if (data.length === 0) return <NotFoundOrder />
 
   return (
-    <div className="space-y-4">
-      <div className="bg-white rounded-lg border border-purple-200 p-4 mb-6">
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center space-x-3">
-            {showAllSensitiveInfo ? (
-              <Eye className="w-5 h-5 text-purple-600" />
-            ) : (
-              <EyeOff className="w-5 h-5 text-gray-400" />
-            )}
-            <Label htmlFor="show-sensitive" className="text-sm font-medium">
-              Mostrar todas as informações sensíveis
-            </Label>
-            <Switch id="show-sensitive" checked={showAllSensitiveInfo} onCheckedChange={setShowAllSensitiveInfo} />
+    <div className="space-y-3 sm:space-y-4 px-2 sm:px-0">
+      <div className="bg-white rounded-lg border border-purple-200 p-3 sm:p-4 md:p-6 mb-4 sm:mb-6">
+        {/* Legenda de Cores dos Status */}
+        <div className="mb-4 p-3 sm:p-4 bg-gradient-to-r from-purple-50 to-blue-50 rounded-lg border border-purple-200">
+          <div className="flex items-start gap-2 mb-3">
+            <Info className="w-4 h-4 sm:w-5 sm:h-5 text-purple-600 flex-shrink-0 mt-0.5" />
+            <h3 className="text-xs sm:text-sm font-semibold text-gray-900">Legenda de Status dos Pedidos</h3>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 sm:gap-3">
+            <StatusLegendItem 
+              bgColor="bg-yellow-50" 
+              borderColor="border-yellow-200" 
+              textColor="text-yellow-900"
+              accentColor="bg-yellow-400"
+              status="Compra Pendente" 
+              description="Aguardando compra"
+            />
+            <StatusLegendItem 
+              bgColor="bg-blue-50" 
+              borderColor="border-blue-200" 
+              textColor="text-blue-900"
+              accentColor="bg-blue-400"
+              status="Compra Realizada" 
+              description="Produto recebido"
+            />
+            <StatusLegendItem 
+              bgColor="bg-green-50" 
+              borderColor="border-green-200" 
+              textColor="text-green-900"
+              accentColor="bg-green-400"
+              status="Compra Quitada" 
+              description="Pagamento efetuado"
+            />
+            <StatusLegendItem 
+              bgColor="bg-orange-50" 
+              borderColor="border-orange-200" 
+              textColor="text-orange-900"
+              accentColor="bg-orange-400"
+              status="A Conferir" 
+              description="Aguardando conferência"
+            />
+            <StatusLegendItem 
+              bgColor="bg-emerald-50" 
+              borderColor="border-emerald-200" 
+              textColor="text-emerald-900"
+              accentColor="bg-emerald-400"
+              status="Conferido" 
+              description="Pedido conferido"
+            />
+            <StatusLegendItem 
+              bgColor="bg-purple-50" 
+              borderColor="border-purple-200" 
+              textColor="text-purple-900"
+              accentColor="bg-purple-400"
+              status="Pronta a Entrega" 
+              description="Em estoque"
+            />
           </div>
         </div>
 
         <div className="mb-4">
           <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4 sm:w-5 sm:h-5" />
             <Input
               type="text"
-              placeholder="Filtrar pedidos por qualquer informação (código, descrição, cliente, status, etc.)"
+              placeholder="Filtrar pedidos..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10 w-full"
+              className="pl-9 sm:pl-10 w-full h-11 sm:h-12 text-sm sm:text-base"
             />
           </div>
           {searchTerm && (
-            <p className="text-xs text-gray-500 mt-1">
+            <p className="text-xs text-gray-500 mt-2">
               {filteredData.length} de {data.length} pedidos encontrados
             </p>
           )}
         </div>
 
-        <div className="flex items-center justify-between">
-          <div className="pr-4">
-            <h2 className="text-xl font-semibold text-purple-900">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
+          <div className="flex-1 min-w-0">
+            <h2 className="text-lg sm:text-xl font-semibold text-purple-900 truncate">
               Lista de Pedidos ({filteredData.length}
               {searchTerm && ` de ${data.length}`})
             </h2>
-            <p className="text-sm text-gray-600 mt-1">Gerencie seus pedidos de forma detalhada</p>
+            <p className="text-xs sm:text-sm text-gray-600 mt-1">Gerencie seus pedidos de forma detalhada</p>
           </div>
 
-          <div className="text-right">
-            <p className="text-sm text-gray-600">Total Geral</p>
-            <p className="text-2xl font-bold text-purple-600 whitespace-nowrap">
-              {showAllSensitiveInfo
-                ? `R$ ${filteredData.reduce((total, order) => total + order.sale_price * order.amount, 0).toFixed(2)}`
-                : "R$ ••••••••"}
+          <div className="text-left sm:text-right flex-shrink-0">
+            <p className="text-xs sm:text-sm text-gray-600">Total Geral</p>
+            <p className="text-xl sm:text-2xl font-bold text-purple-600 break-words">
+              R$ {filteredData.reduce((total, order) => total + order.sale_price * order.amount, 0).toFixed(2)}
             </p>
           </div>
         </div>
 
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4 pt-4 border-t border-gray-200">
+        <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 mt-4 pt-4 border-t border-gray-200">
           <div className="text-center">
             <p className="text-xs text-gray-500">Total de Itens</p>
             <p className="font-semibold text-gray-900">
@@ -158,41 +189,38 @@ export const ShoppingView = ({
           <div className="text-center">
             <p className="text-xs text-gray-500">Custo Total</p>
             <p className="font-semibold text-red-600">
-              {showAllSensitiveInfo
-                ? `R$ ${filteredData.reduce((total, order) => total + order.cost_price * order.amount, 0).toFixed(2)}`
-                : "R$ ••••••"}
+              R$ {filteredData.reduce((total, order) => total + order.cost_price * order.amount, 0).toFixed(2)}
             </p>
           </div>
           <div className="text-center">
             <p className="text-xs text-gray-500">Receita Total</p>
             <p className="font-semibold text-green-600">
-              {showAllSensitiveInfo
-                ? `R$ ${filteredData.reduce((total, order) => total + order.sale_price * order.amount, 0).toFixed(2)}`
-                : "R$ ••••••"}
+              R$ {filteredData.reduce((total, order) => total + order.sale_price * order.amount, 0).toFixed(2)}
             </p>
           </div>
           <div className="text-center">
             <p className="text-xs text-gray-500">Lucro Total</p>
             <p className="font-semibold text-blue-600">
-              {showAllSensitiveInfo
-                ? `R$ ${filteredData.reduce((total, order) => total + (order.sale_price - order.cost_price) * order.amount, 0).toFixed(2)}`
-                : "R$ ••••••"}
+              R$ {filteredData.reduce((total, order) => total + (order.sale_price - order.cost_price) * order.amount, 0).toFixed(2)}
             </p>
           </div>
         </div>
       </div>
 
-      <div className="w-full">
-        {/* <Button className="w-full" onClick={() => onUpdate(confirmedOrder, Status.ConfirmSale)}>
-          Efetivar pedido(s)
-        </Button> */}
-
+      <div className="w-full px-2 sm:px-0 space-y-2 sm:space-y-3">
         <DialogFormOrder solicitation={null} text="Adicionar solicitação" variant={"outline"} />
-
+        {confirmedOrder.length > 0 && (
+          <Button
+            variant="outline"
+            onClick={() => setConfirmedOrder([])}
+            className="w-full min-h-[44px] text-sm sm:text-base py-2.5 sm:py-3 border-red-200 text-red-600 hover:bg-red-50 hover:border-red-300"
+          >
+            Desmarcar todos ({confirmedOrder.length} selecionado{confirmedOrder.length !== 1 ? "s" : ""})
+          </Button>
+        )}
       </div>
 
-
-      <div className="flex flex-col gap-4">
+      <div className="flex flex-col gap-3 sm:gap-4 px-2 sm:px-0">
         {solicitations.map((solicitation: Solicitation, idx: number) => (
           <AccordionSolicitationCard
             type="order"
@@ -205,7 +233,7 @@ export const ShoppingView = ({
         ))}
       </div>
 
-      <div className="flex items-center justify-center gap-4 mt-6">
+      <div className="flex items-center justify-center gap-2 sm:gap-4 mt-4 sm:mt-6 px-2 sm:px-0">
         <Button
           variant="outline"
           disabled={pagination.pageIndex <= 1}
@@ -215,12 +243,12 @@ export const ShoppingView = ({
               pageIndex: Math.max(prev.pageIndex - 1, 1),
             }))
           }
-          className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 border border-purple-200 rounded-lg hover:bg-purple-50 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+          className="flex items-center justify-center gap-2 px-4 sm:px-6 py-2.5 sm:py-3 min-h-[44px] text-sm font-medium text-gray-700 border border-purple-200 rounded-lg hover:bg-purple-50 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
         >
           Voltar
         </Button>
 
-        <div className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-purple-700 border border-purple-200 rounded-lg hover:bg-purple-50 transition-all">
+        <div className="flex items-center justify-center gap-2 px-4 sm:px-6 py-2.5 sm:py-3 min-h-[44px] text-sm font-medium text-purple-700 border border-purple-200 rounded-lg bg-purple-50">
           Página {pagination.pageIndex}
         </div>
 
@@ -232,7 +260,7 @@ export const ShoppingView = ({
               pageIndex: prev.pageIndex + 1,
             }))
           }
-          className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 border border-purple-200 rounded-lg hover:bg-purple-50 transition-all"
+          className="flex items-center justify-center gap-2 px-4 sm:px-6 py-2.5 sm:py-3 min-h-[44px] text-sm font-medium text-gray-700 border border-purple-200 rounded-lg hover:bg-purple-50 transition-all"
         >
           Próxima
         </Button>
@@ -241,9 +269,9 @@ export const ShoppingView = ({
 
       {
         filteredData.length > 0 && (
-          <div className="bg-white rounded-lg border border-purple-200 p-4 mt-6">
+          <div className="bg-white rounded-lg border border-purple-200 p-3 sm:p-4 mt-4 sm:mt-6 mx-2 sm:mx-0">
             <div className="flex items-center justify-between">
-              <div className="text-sm text-gray-600">
+              <div className="text-xs sm:text-sm text-gray-600">
                 {filteredData.length} {filteredData.length === 1 ? "pedido" : "pedidos"}
                 {searchTerm
                   ? ` encontrado${filteredData.length === 1 ? "" : "s"}`
@@ -255,5 +283,37 @@ export const ShoppingView = ({
         )
       }
     </div >
+  )
+}
+
+// Componente de Legenda de Status
+const StatusLegendItem = ({ 
+  bgColor, 
+  borderColor, 
+  textColor, 
+  accentColor, 
+  status,
+  description
+}: { 
+  bgColor: string
+  borderColor: string
+  textColor: string
+  accentColor: string
+  status: string
+  description?: string
+}) => {
+  return (
+    <div className={`flex items-start gap-2 sm:gap-3 p-2 sm:p-2.5 rounded-lg border-2 ${bgColor} ${borderColor} ${textColor}`}>
+      <div className="flex flex-col items-center gap-1 flex-shrink-0 mt-0.5">
+        <div className={`w-4 h-4 sm:w-5 sm:h-5 rounded ${accentColor} border-2 ${borderColor}`} />
+        <div className={`w-1 h-4 sm:h-6 ${accentColor} rounded`} />
+      </div>
+      <div className="flex-1 min-w-0">
+        <p className="font-semibold text-xs sm:text-sm leading-tight">{status}</p>
+        {description && (
+          <p className="text-xs opacity-75 mt-0.5 leading-tight">{description}</p>
+        )}
+      </div>
+    </div>
   )
 }

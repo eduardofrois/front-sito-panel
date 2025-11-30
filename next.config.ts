@@ -1,5 +1,5 @@
 
-const version = "1.0.1";
+const version = "1.2.4";
 
 const development = {
   env: {
