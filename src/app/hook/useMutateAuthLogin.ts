@@ -34,7 +34,7 @@ export function useMutateLogin() {
 
     const mutation = useMutation({
         mutationFn: Login,
-        onSuccess: (data) => {
+        onSuccess: async (data) => {
             toast.success("Login feito com sucesso", {
                 description: "Tenha um bom trabalho!",
                 closeButton: true,
@@ -44,9 +44,15 @@ export function useMutateLogin() {
             
             // O accessToken é definido automaticamente pelo backend via Set-Cookie
             // quando withCredentials: true está habilitado
-            // Não precisamos salvar manualmente aqui
+            // Aguardar um pouco para garantir que o cookie seja definido
+            await new Promise(resolve => setTimeout(resolve, 200));
             
-            router.push("/home")
+            // Usar window.location.href para garantir que o cookie seja enviado na requisição
+            if (typeof window !== 'undefined') {
+                window.location.href = "/home";
+            } else {
+                router.push("/home");
+            }
         },
         onError: (error) => {
             console.log(error);

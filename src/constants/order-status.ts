@@ -7,6 +7,8 @@ export enum Status {
     MoreThenOne = 6,
     ToCheck = 7,
     Checked = 8,
+    PartialPayment = 9,
+    FullyPaid = 10,
 }
 
 export enum Status_String {
@@ -16,5 +18,7 @@ export enum Status_String {
     ConfirmSale = "Compra Realizada",
     PaidPurchase = "Compra Quitada",
     ToCheck = "A Conferir",
-    Checked = "Conferido"
+    Checked = "Conferido",
+    PartialPayment = "Pagamento Parcial",
+    FullyPaid = "Pagamento Quitado"
 }

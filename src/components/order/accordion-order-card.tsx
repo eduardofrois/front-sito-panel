@@ -209,7 +209,9 @@ export const AccordionOrderCard = ({
                 }
               </div>
               <div className="flex flex-col gap-2 sm:gap-3 mt-4">
-                {order.status === Status_String.ConfirmSale && (
+                {(order.status === Status_String.ConfirmSale || 
+                  order.status === Status_String.PartialPayment || 
+                  order.status === Status_String.FullyPaid) && (
                   <Button
                     variant="secondary"
                     className="w-full min-h-[44px] text-sm sm:text-base py-2.5 sm:py-3"

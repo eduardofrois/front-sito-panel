@@ -5,10 +5,10 @@ import { Info, Search } from "lucide-react"
 import type { Dispatch, SetStateAction } from "react"
 import { useMemo, useState } from "react"
 import type { Order, Solicitation } from "../../app/home/orders/order.interface"
-import { Status_String } from "@/constants/order-status"
 import { IsLoadingCard } from "../global/isloading-card"
 import { NotFoundOrder } from "../global/not-found-order"
 import { Button } from "../ui/button"
+import { Pagination } from "../ui/pagination"
 import { AccordionSolicitationCard } from "./accordion-solicitation-card"
 import { DialogFormOrder } from "./dialog-form-order"
 
@@ -21,7 +21,7 @@ interface iProps {
   onDeleteOrder?: (index: number) => void
   confirmedOrder: number[]
   setConfirmedOrder: Dispatch<SetStateAction<number[]>>
-  onUpdate: (orders: number[], value: number) => void
+  onUpdate: (orders: number[], value: number) => Promise<void>
   pagination: { pageIndex: number; pageSize: number };
   setPagination: Dispatch<SetStateAction<{ pageIndex: number; pageSize: number }>>
 }
@@ -38,8 +38,13 @@ export const ShoppingView = ({
 }: iProps) => {
   const [searchTerm, setSearchTerm] = useState("")
 
+  // Normaliza os dados para lidar com formato paginado ou array simples
+  const ordersData: Order[] = Array.isArray(data) ? data : ((data as any)?.data || [])
+  const solicitationsData: Solicitation[] = Array.isArray(solicitations) ? solicitations : ((solicitations as any)?.data || [])
+  const solicitationsTotalPages: number | undefined = Array.isArray(solicitations) ? undefined : (solicitations as any)?.totalPages
+
   const filteredData = useMemo(() => {
-    if (!searchTerm.trim()) return data
+    if (!searchTerm.trim()) return ordersData
 
     const searchLower = searchTerm.toLowerCase().trim()
 
@@ -81,7 +86,7 @@ export const ShoppingView = ({
 
   if (isLoading || isLoadingSolicitations) return <IsLoadingCard />
 
-  if (data.length === 0) return <NotFoundOrder />
+  if (ordersData.length === 0) return <NotFoundOrder />
 
   return (
     <div className="space-y-3 sm:space-y-4 px-2 sm:px-0">
@@ -93,52 +98,52 @@ export const ShoppingView = ({
             <h3 className="text-xs sm:text-sm font-semibold text-gray-900">Legenda de Status dos Pedidos</h3>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 sm:gap-3">
-            <StatusLegendItem 
-              bgColor="bg-yellow-50" 
-              borderColor="border-yellow-200" 
+            <StatusLegendItem
+              bgColor="bg-yellow-50"
+              borderColor="border-yellow-200"
               textColor="text-yellow-900"
               accentColor="bg-yellow-400"
-              status="Compra Pendente" 
+              status="Compra Pendente"
               description="Aguardando compra"
             />
-            <StatusLegendItem 
-              bgColor="bg-blue-50" 
-              borderColor="border-blue-200" 
+            <StatusLegendItem
+              bgColor="bg-blue-50"
+              borderColor="border-blue-200"
               textColor="text-blue-900"
               accentColor="bg-blue-400"
-              status="Compra Realizada" 
+              status="Compra Realizada"
               description="Produto recebido"
             />
-            <StatusLegendItem 
-              bgColor="bg-green-50" 
-              borderColor="border-green-200" 
+            <StatusLegendItem
+              bgColor="bg-green-50"
+              borderColor="border-green-200"
               textColor="text-green-900"
               accentColor="bg-green-400"
-              status="Compra Quitada" 
+              status="Compra Quitada"
               description="Pagamento efetuado"
             />
-            <StatusLegendItem 
-              bgColor="bg-orange-50" 
-              borderColor="border-orange-200" 
+            <StatusLegendItem
+              bgColor="bg-orange-50"
+              borderColor="border-orange-200"
               textColor="text-orange-900"
               accentColor="bg-orange-400"
-              status="A Conferir" 
+              status="A Conferir"
               description="Aguardando conferência"
             />
-            <StatusLegendItem 
-              bgColor="bg-emerald-50" 
-              borderColor="border-emerald-200" 
+            <StatusLegendItem
+              bgColor="bg-emerald-50"
+              borderColor="border-emerald-200"
               textColor="text-emerald-900"
               accentColor="bg-emerald-400"
-              status="Conferido" 
+              status="Conferido"
               description="Pedido conferido"
             />
-            <StatusLegendItem 
-              bgColor="bg-purple-50" 
-              borderColor="border-purple-200" 
+            <StatusLegendItem
+              bgColor="bg-purple-50"
+              borderColor="border-purple-200"
               textColor="text-purple-900"
               accentColor="bg-purple-400"
-              status="Pronta a Entrega" 
+              status="Pronta a Entrega"
               description="Em estoque"
             />
           </div>
@@ -157,7 +162,7 @@ export const ShoppingView = ({
           </div>
           {searchTerm && (
             <p className="text-xs text-gray-500 mt-2">
-              {filteredData.length} de {data.length} pedidos encontrados
+              {filteredData.length} de {ordersData.length} pedidos encontrados
             </p>
           )}
         </div>
@@ -166,7 +171,7 @@ export const ShoppingView = ({
           <div className="flex-1 min-w-0">
             <h2 className="text-lg sm:text-xl font-semibold text-purple-900 truncate">
               Lista de Pedidos ({filteredData.length}
-              {searchTerm && ` de ${data.length}`})
+              {searchTerm && ` de ${ordersData.length}`})
             </h2>
             <p className="text-xs sm:text-sm text-gray-600 mt-1">Gerencie seus pedidos de forma detalhada</p>
           </div>
@@ -183,13 +188,13 @@ export const ShoppingView = ({
           <div className="text-center">
             <p className="text-xs text-gray-500">Total de Itens</p>
             <p className="font-semibold text-gray-900">
-              {filteredData.reduce((total, order) => total + order.amount, 0)}
+              {filteredData.reduce((total: number, order: Order) => total + order.amount, 0)}
             </p>
           </div>
           <div className="text-center">
             <p className="text-xs text-gray-500">Custo Total</p>
             <p className="font-semibold text-red-600">
-              R$ {filteredData.reduce((total, order) => total + order.cost_price * order.amount, 0).toFixed(2)}
+              R$ {filteredData.reduce((total: number, order: Order) => total + order.cost_price * order.amount, 0).toFixed(2)}
             </p>
           </div>
           <div className="text-center">
@@ -201,7 +206,7 @@ export const ShoppingView = ({
           <div className="text-center">
             <p className="text-xs text-gray-500">Lucro Total</p>
             <p className="font-semibold text-blue-600">
-              R$ {filteredData.reduce((total, order) => total + (order.sale_price - order.cost_price) * order.amount, 0).toFixed(2)}
+              R$ {filteredData.reduce((total: number, order: Order) => total + (order.sale_price - order.cost_price) * order.amount, 0).toFixed(2)}
             </p>
           </div>
         </div>
@@ -221,7 +226,7 @@ export const ShoppingView = ({
       </div>
 
       <div className="flex flex-col gap-3 sm:gap-4 px-2 sm:px-0">
-        {solicitations.map((solicitation: Solicitation, idx: number) => (
+        {solicitationsData.map((solicitation: Solicitation, idx: number) => (
           <AccordionSolicitationCard
             type="order"
             key={solicitation.id ?? idx}
@@ -233,38 +238,13 @@ export const ShoppingView = ({
         ))}
       </div>
 
-      <div className="flex items-center justify-center gap-2 sm:gap-4 mt-4 sm:mt-6 px-2 sm:px-0">
-        <Button
-          variant="outline"
-          disabled={pagination.pageIndex <= 1}
-          onClick={() =>
-            setPagination(prev => ({
-              ...prev,
-              pageIndex: Math.max(prev.pageIndex - 1, 1),
-            }))
-          }
-          className="flex items-center justify-center gap-2 px-4 sm:px-6 py-2.5 sm:py-3 min-h-[44px] text-sm font-medium text-gray-700 border border-purple-200 rounded-lg hover:bg-purple-50 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
-        >
-          Voltar
-        </Button>
-
-        <div className="flex items-center justify-center gap-2 px-4 sm:px-6 py-2.5 sm:py-3 min-h-[44px] text-sm font-medium text-purple-700 border border-purple-200 rounded-lg bg-purple-50">
-          Página {pagination.pageIndex}
-        </div>
-
-        <Button
-          variant="outline"
-          onClick={() =>
-            setPagination(prev => ({
-              ...prev,
-              pageIndex: prev.pageIndex + 1,
-            }))
-          }
-          className="flex items-center justify-center gap-2 px-4 sm:px-6 py-2.5 sm:py-3 min-h-[44px] text-sm font-medium text-gray-700 border border-purple-200 rounded-lg hover:bg-purple-50 transition-all"
-        >
-          Próxima
-        </Button>
-      </div>
+      <Pagination
+        pageIndex={pagination.pageIndex}
+        pageSize={pagination.pageSize}
+        totalPages={solicitationsTotalPages}
+        onPageChange={(page) => setPagination(prev => ({ ...prev, pageIndex: page }))}
+        disabled={isLoadingSolicitations}
+      />
 
 
       {
@@ -276,7 +256,7 @@ export const ShoppingView = ({
                 {searchTerm
                   ? ` encontrado${filteredData.length === 1 ? "" : "s"}`
                   : ` carregado${filteredData.length === 1 ? "" : "s"}`}
-                {searchTerm && ` de ${data.length} total`}
+                {searchTerm && ` de ${ordersData.length} total`}
               </div>
             </div>
           </div>
@@ -287,14 +267,14 @@ export const ShoppingView = ({
 }
 
 // Componente de Legenda de Status
-const StatusLegendItem = ({ 
-  bgColor, 
-  borderColor, 
-  textColor, 
-  accentColor, 
+const StatusLegendItem = ({
+  bgColor,
+  borderColor,
+  textColor,
+  accentColor,
   status,
   description
-}: { 
+}: {
   bgColor: string
   borderColor: string
   textColor: string

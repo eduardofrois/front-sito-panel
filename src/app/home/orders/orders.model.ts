@@ -17,7 +17,7 @@ export const useOrdersModel = () => {
     pageIndex: 1,
     pageSize: 10,
   });
-  const { data, isLoading } = useQueryGetAllOrders()
+  const { data, isLoading } = useQueryGetAllOrders({ pageNumber: pagination.pageIndex, pageSize: pagination.pageSize })
   const { data: solicitations, isLoading: isLoadingSolicitations, refetch: refetchSolicitation } = useQueryGetAllSolicitations({ pageNumber: pagination.pageIndex, pageSize: pagination.pageSize });
   const { mutateAsync, isPending } = useMutationCreateOrder()
   const { mutateAsync: updateStautsOrderAync, isPending: isPendingUpdateStatusOrder } = useMutationUpdateStatusOrder()
@@ -56,7 +56,7 @@ export const useOrdersModel = () => {
     })
   }
 
-  async function onUpdate(orders: number[], value: number) {
+  async function onUpdate(orders: number[], value: number): Promise<void> {
     await updateStautsOrderAync({ orders: orders, value: value })
     setConfirmedOrder([])
     queryClient.invalidateQueries({

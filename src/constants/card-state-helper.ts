@@ -14,13 +14,16 @@ export const getCardState = (item: any, isSelected: boolean, type: "order" | "ac
     }
 
     const isConfirmSale = item.status === Status_String.ConfirmSale
+    const isPartialPayment = item.status === Status_String.PartialPayment
+    const isFullyPaid = item.status === Status_String.FullyPaid
+    const isAccountsPayableStatus = isConfirmSale || isPartialPayment || isFullyPaid
 
     if (type == "order") {
-        if (isConfirmSale) return "CONFIRMED"
+        if (isAccountsPayableStatus) return "CONFIRMED"
     }
 
     if (type == "account") {
-        if (isConfirmSale) return "CONFIRMED"
+        if (isAccountsPayableStatus) return "CONFIRMED"
     }
 
     return "DEFAULT"

@@ -14,6 +14,8 @@ export const getStatusColor = (status: string | null | undefined): string => {
         [Status_String.PaidPurchase]: "bg-green-100 text-green-800 border-green-200",
         [Status_String.ToCheck]: "bg-orange-100 text-orange-800 border-orange-200",
         [Status_String.Checked]: "bg-emerald-100 text-emerald-800 border-emerald-200",
+        [Status_String.PartialPayment]: "bg-amber-100 text-amber-800 border-amber-200",
+        [Status_String.FullyPaid]: "bg-teal-100 text-teal-800 border-teal-200",
     };
 
     return statusColors[status] || "bg-gray-100 text-gray-800 border-gray-200";
@@ -66,6 +68,28 @@ export const getOrderCardStyles = (
             text: "text-blue-900",
             accentBorder: "bg-blue-400",
             hover: "hover:bg-blue-100 hover:border-blue-300",
+        };
+    }
+
+    // Pagamento Parcial - Âmbar (pagamento em andamento)
+    if (status === Status_String.PartialPayment) {
+        return {
+            background: "bg-amber-50",
+            border: "border-amber-200",
+            text: "text-amber-900",
+            accentBorder: "bg-amber-400",
+            hover: "hover:bg-amber-100 hover:border-amber-300",
+        };
+    }
+
+    // Pagamento Quitado - Teal (totalmente pago)
+    if (status === Status_String.FullyPaid) {
+        return {
+            background: "bg-teal-50",
+            border: "border-teal-200",
+            text: "text-teal-900",
+            accentBorder: "bg-teal-400",
+            hover: "hover:bg-teal-100 hover:border-teal-300",
         };
     }
 

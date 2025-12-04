@@ -19,7 +19,7 @@ export const OrdersView = (props: OrdersViewProps) => {
   return (
     <div>
       <ShoppingView
-        data={data}
+        data={data?.data || data || []}
         solicitations={solicitations}
         isLoading={isLoading}
         isLoadingSolicitations={isLoadingSolicitations}

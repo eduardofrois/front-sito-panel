@@ -2,24 +2,41 @@ import api from "@/services/api";
 import { useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
 
-async function getAllOrders() {
-    const response = await api.get("/orders");
+interface PaginationInterface {
+    pageNumber: number;
+    pageSize: number;
+}
+
+async function getAllOrders(pageNumber: number, pageSize: number) {
+    const response = await api.get(`/orders?pageNumber=${pageNumber}&pageSize=${pageSize}`);
 
     if (!response.data.flag) {
-        toast.error("Erro ao buscars pedidos", {
+        toast.error("Erro ao buscar pedidos", {
             description: response.data.message,
             duration: 5000,
             closeButton: true
         })
-        return []
+        return {
+            data: [],
+            totalCount: 0,
+            pageNumber: 1,
+            pageSize: 10,
+            totalPages: 0
+        }
     }
 
-    return response.data.data
+    return {
+        data: response.data.data || [],
+        totalCount: response.data.totalCount || 0,
+        pageNumber: response.data.pageNumber || pageNumber,
+        pageSize: response.data.pageSize || pageSize,
+        totalPages: response.data.totalPages || 0
+    }
 }
 
-export default function useQueryGetAllOrders() {
+export default function useQueryGetAllOrders({ pageNumber, pageSize }: PaginationInterface) {
     return useQuery({
-        queryKey: ["getAllOrders"],
-        queryFn: getAllOrders
+        queryKey: ["getAllOrders", pageNumber, pageSize],
+        queryFn: () => getAllOrders(pageNumber, pageSize)
     })
 }

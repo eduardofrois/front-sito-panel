@@ -134,7 +134,9 @@ export const PurchaseCard = ({ order, selectedOrders, handleCardClick, canSelect
 
                 <div className="flex items-center gap-2">
                     <Calendar className={`w-4 h-4 ${isSelected ? "text-white/80" : "text-gray-600"}`} />
-                    {order.status === Status_String.ConfirmSale ? (
+                    {order.status === Status_String.ConfirmSale || 
+                     order.status === Status_String.PartialPayment || 
+                     order.status === Status_String.FullyPaid ? (
                         <>
                             <span className={`text-sm ${isSelected ? "text-white/80" : "text-gray-500"}`}>Data da Compra:</span>
                             <span className={`font-medium ${isSelected ? "text-white" : cardStyles.text}`}>

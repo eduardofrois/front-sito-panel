@@ -10,12 +10,14 @@ import { useAccountsModel } from "./accounts.model"
 type AccountsViewProps = ReturnType<typeof useAccountsModel>
 
 export const AccountsView = (props: AccountsViewProps) => {
-    const { data, isLoading, selectedOrders, setSelectedOrders, totalValueToPay, onUpdate, handleCardClick, canSelectCard, firstSelectedOrder, isLoadingPending,
-        ordersPending, isLoadingSolicitations, solicitations, isUpdatingStatus, paginationPending, setPaginationPending } = props
+    const { selectedOrders, setSelectedOrders, totalValueToPay, onUpdate, handleCardClick, canSelectCard, firstSelectedOrder, isLoadingPending,
+        confirmedOrder, setConfirmedOrder,
+        ordersPending, isLoadingSolicitations, solicitations, isUpdatingStatus, paginationPending, setPaginationPending, pagination, setPagination } = props
 
     if (isLoadingSolicitations) return <IsLoadingCard />
 
-    if (solicitations.length === 0) return <NotFoundOrder />
+    const solicitationsData = Array.isArray(solicitations) ? solicitations : (solicitations?.data || [])
+    if (solicitationsData.length === 0) return <NotFoundOrder />
 
     return (
         <div className="pb-6">
@@ -36,7 +38,7 @@ export const AccountsView = (props: AccountsViewProps) => {
                 <TabsContent value="accounts-list" className="mt-0 p-4 sm:p-6">
                     <AccountsList
                         canSelectCard={canSelectCard}
-                        data={data}
+                        data={solicitationsData}
                         firstSelectedOrder={firstSelectedOrder}
                         handleCardClick={handleCardClick}
                         onUpdate={onUpdate}
@@ -44,15 +46,22 @@ export const AccountsView = (props: AccountsViewProps) => {
                         setSelectedOrders={setSelectedOrders}
                         totalValueToPay={totalValueToPay}
                         isUpdatingStatus={isUpdatingStatus}
+                        pagination={pagination}
+                        setPagination={setPagination}
+                        totalPages={Array.isArray(solicitations) ? undefined : solicitations?.totalPages}
+                        isLoading={isLoadingSolicitations}
+                        confirmedOrder={confirmedOrder}
+                        setConfirmedOrder={setConfirmedOrder}
                     />
                 </TabsContent>
 
                 <TabsContent value="accounts-receive" className="mt-0 p-4 sm:p-6">
                     <AccountsReceive
-                        isLoadingPending={isLoadingPending}
+                        isLoading={isLoadingPending}
                         orders={ordersPending || []}
                         pagination={paginationPending}
                         setPagination={setPaginationPending}
+                        totalPages={ordersPending?.totalPages}
                     />
                 </TabsContent>
             </Tabs>

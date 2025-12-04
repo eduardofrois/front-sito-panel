@@ -4,7 +4,6 @@ import { useState } from "react"
 import useQueryGetPendingPaid from "../orders/hooks/mutates/useMutateGetOrdersPaidPending"
 import useMutationUpdateStatusOrder from "../orders/hooks/mutates/useMutateUpdateStatusOrder"
 import useQueryGetAllSolicitations from "../orders/hooks/useQueryGetAllSolicitations"
-import useQueryGetOrdersByStatus from "../orders/hooks/useQueryGetOrdersByStatus"
 import { Order } from "../orders/order.interface"
 import useQueryGetClients from "./hooks/useQueryGetClients"
 
@@ -19,7 +18,6 @@ export const useAccountsModel = () => {
     });
     const [confirmedOrder, setConfirmedOrder] = useState<number[]>([])
 
-    const { data, isLoading } = useQueryGetOrdersByStatus(Status.MoreThenOne)
     const { data: clients, isLoading: isLoadingClients } = useQueryGetClients()
     const { data: ordersPending, isLoading: isLoadingPending } = useQueryGetPendingPaid({
         pageNumber: paginationPending.pageIndex,
@@ -67,13 +65,6 @@ export const useAccountsModel = () => {
                 if (prev.length === 0)
                     return [...prev, order.id]
 
-                // Se já há cards selecionados, verifica se o status é compatível
-                const firstSelectedOrder = data?.find((o: Order) => o.id === prev[0])
-                setFirstSelectedOrder(firstSelectedOrder)
-                if (firstSelectedOrder && firstSelectedOrder.status === order.status) {
-                    return [...prev, order.id]
-                }
-
                 return prev
             }
         })
@@ -82,12 +73,10 @@ export const useAccountsModel = () => {
     const canSelectCard = (order: Order): boolean => {
         if (selectedOrders.length === 0) return true
 
-        const firstSelectedOrder = data?.find((o: Order) => o.id === selectedOrders[0])
-        return firstSelectedOrder ? firstSelectedOrder.status === order.status : false
+        return true;
     }
 
     return {
-        data, isLoading,
         setSelectedOrders, selectedOrders,
         totalValueToPay,
         onUpdate,
@@ -99,6 +88,7 @@ export const useAccountsModel = () => {
         solicitations, isLoadingSolicitations, refetchSolicitation,
         confirmedOrder, setConfirmedOrder,
         isUpdatingStatus,
-        paginationPending, setPaginationPending
+        paginationPending, setPaginationPending,
+        pagination, setPagination
     }
 }

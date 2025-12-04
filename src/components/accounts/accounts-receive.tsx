@@ -6,12 +6,13 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
 import { Input } from "@/components/ui/input"
+import { Pagination } from "@/components/ui/pagination"
 import { Separator } from "@/components/ui/separator"
 import { formatCurrency, formatDate } from "@/functions/format-functions"
 import { getOrderCardStyles } from "@/functions/style-functions"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useQueryClient } from "@tanstack/react-query"
-import { CalendarDays, CheckCircle2, ChevronLeft, ChevronRight, Package, User, X } from "lucide-react"
+import { CalendarDays, CheckCircle2, Package, User, X } from "lucide-react"
 import { useMemo, useState } from "react"
 import { useForm, useWatch } from "react-hook-form"
 import { toast } from "sonner"
@@ -19,10 +20,11 @@ import * as z from "zod"
 import { IsLoadingCard } from "../global/isloading-card"
 
 interface iProps {
-  isLoadingPending: boolean
+  isLoading: boolean
   orders: any[]
   pagination: { pageIndex: number; pageSize: number }
   setPagination: React.Dispatch<React.SetStateAction<{ pageIndex: number; pageSize: number }>>
+  totalPages?: number
 }
 
 const paymentSchema = z.object({
@@ -39,7 +41,7 @@ const paymentSchema = z.object({
 
 type PaymentFormData = z.infer<typeof paymentSchema>
 
-export const AccountsReceive = ({ isLoadingPending, orders, pagination, setPagination }: iProps) => {
+export const AccountsReceive = ({ isLoading, orders, pagination, setPagination, totalPages }: iProps) => {
   const [selectedOrders, setSelectedOrders] = useState<Set<number>>(new Set())
 
   const queryClient = useQueryClient()
@@ -53,9 +55,9 @@ export const AccountsReceive = ({ isLoadingPending, orders, pagination, setPagin
   })
 
   const calculatePendingAmount = (order: any) => {
-    const paidPrice = order.price_paid ?? 0
-    const totalPrice = order.total_price ?? 0
-    return totalPrice - paidPrice
+    const paidPrice = Number(order.price_paid ?? 0)
+    const totalPrice = Number(order.total_price ?? 0)
+    return Math.max(0, totalPrice - paidPrice) // Garante que não seja negativo
   }
 
   const toggleOrderSelection = (orderId: number) => {
@@ -108,13 +110,21 @@ export const AccountsReceive = ({ isLoadingPending, orders, pagination, setPagin
     }
   }
 
-  if (isLoadingPending) return <IsLoadingCard />
+  if (isLoading) return <IsLoadingCard />
 
-  const getPaymentProgress = (order: any) => {
-    const paidPrice = order.price_paid ?? 0
-    const totalPrice = order.total_price ?? 0
+  const getPaymentProgress = (order: any, previewAmount?: number) => {
+    const currentPaidPrice = Number(order.price_paid ?? 0)
+    const totalPrice = Number(order.total_price ?? 0)
+
     if (totalPrice === 0) return 0
-    const progress = (paidPrice / totalPrice) * 100
+
+    // Se houver um valor de prévia (quando o usuário está digitando), adiciona ao valor atual
+    const paidPrice = previewAmount ? currentPaidPrice + Number(previewAmount) : currentPaidPrice
+
+    // Garante que o valor pago não exceda o total
+    const adjustedPaidPrice = Math.min(paidPrice, totalPrice)
+
+    const progress = (adjustedPaidPrice / totalPrice) * 100
     return Math.min(100, Math.max(0, progress))
   }
 
@@ -195,7 +205,15 @@ export const AccountsReceive = ({ isLoadingPending, orders, pagination, setPagin
               {orders.map((order) => {
                 const pendingAmount = calculatePendingAmount(order)
                 const isSelected = selectedOrders.has(order.id)
-                const progress = getPaymentProgress(order)
+
+                // Obtém o valor digitado no formulário para mostrar prévia na barra de progresso
+                // O watchedPayments usa order.id como string (chave do objeto)
+                const paymentData = watchedPayments?.[String(order.id)] as { amount?: string } | undefined
+                const previewAmount = isSelected && paymentData?.amount
+                  ? Number(paymentData.amount) || 0
+                  : 0
+
+                const progress = getPaymentProgress(order, previewAmount)
                 const isFullyPaid = pendingAmount <= 0
                 const cardStyles = getOrderCardStyles(order, isSelected)
 
@@ -334,49 +352,14 @@ export const AccountsReceive = ({ isLoadingPending, orders, pagination, setPagin
       )}
 
       {/* Controles de paginação */}
-      {!isLoadingPending && orders.length > 0 && (
-        <div className="flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-4 pt-4 border-t">
-          <Button
-            variant="outline"
-            size="sm"
-            disabled={pagination.pageIndex <= 1 || isLoadingPending}
-            onClick={() =>
-              setPagination(prev => ({
-                ...prev,
-                pageIndex: Math.max(prev.pageIndex - 1, 1),
-              }))
-            }
-            className="w-full sm:w-auto h-9 sm:h-9"
-          >
-            <ChevronLeft className="h-4 w-4" />
-            <span className="ml-1">Anterior</span>
-          </Button>
-
-          <div className="flex items-center gap-2 px-3 sm:px-4 py-2 text-xs sm:text-sm font-medium text-muted-foreground border rounded-lg bg-muted/30 h-9">
-            <span>Página {pagination.pageIndex}</span>
-            {orders.length === pagination.pageSize && (
-              <span className="text-[10px] sm:text-xs text-muted-foreground hidden sm:inline">
-                ({pagination.pageSize} por página)
-              </span>
-            )}
-          </div>
-
-          <Button
-            variant="outline"
-            size="sm"
-            disabled={orders.length < pagination.pageSize || isLoadingPending}
-            onClick={() =>
-              setPagination(prev => ({
-                ...prev,
-                pageIndex: prev.pageIndex + 1,
-              }))
-            }
-            className="w-full sm:w-auto h-9 sm:h-9"
-          >
-            <span className="mr-1">Próxima</span>
-            <ChevronRight className="h-4 w-4" />
-          </Button>
-        </div>
+      {!isLoading && orders.length > 0 && (
+        <Pagination
+          pageIndex={pagination.pageIndex}
+          pageSize={pagination.pageSize}
+          totalPages={totalPages}
+          onPageChange={(page: number) => setPagination(prev => ({ ...prev, pageIndex: page }))}
+          disabled={isLoading}
+        />
       )}
     </div>
   )

@@ -49,8 +49,12 @@ export const AccordionSolicitationCard = ({
             // Não selecionável
             return null;
         } else if (type === "account") {
-            // Só pode selecionar "Compra Realizada" para quitar
-            if (order.status === Status_String.ConfirmSale) return "quitar";
+            // Pode selecionar "Compra Realizada", "Pagamento Parcial" ou "Pagamento Quitado" para quitar
+            if (order.status === Status_String.ConfirmSale ||
+                order.status === Status_String.PartialPayment ||
+                order.status === Status_String.FullyPaid) {
+                return "quitar";
+            }
             return null;
         }
     }
@@ -66,7 +70,7 @@ export const AccordionSolicitationCard = ({
                         : item.status === Status_String.PaidPurchase && item.status_conference === Status_String.Checked
                             ? "Pedido já conferido. Selecione para transformar em Pronta Entrega."
                             : "Pedido não está no status adequado para esta ação."
-                    : "Apenas pedidos em 'Compra Realizada' podem ser quitados.",
+                    : "Apenas pedidos em 'Compra Realizada', 'Pagamento Parcial' ou 'Pagamento Quitado' podem ser quitados.",
                 duration: 4000
             });
             return;
@@ -90,7 +94,11 @@ export const AccordionSolicitationCard = ({
                 )
                 .map(order => order.id);
         } else if (type === "account") {
-            selecionaveis = filteredOrders.filter(order => order.status === Status_String.ConfirmSale).map(order => order.id);
+            selecionaveis = filteredOrders.filter(order =>
+                order.status === Status_String.ConfirmSale ||
+                order.status === Status_String.PartialPayment ||
+                order.status === Status_String.FullyPaid
+            ).map(order => order.id);
         }
         if (!selecionaveis.length) {
             toast.warning("Não há pedidos selecionáveis nos resultados atuais.");
@@ -231,7 +239,21 @@ export const AccordionSolicitationCard = ({
                             // Determina qual será o próximo status baseado nos pedidos selecionados
                             const getNextStatus = () => {
                                 if (type === "account") {
-                                    // No módulo Contas: Compra Realizada → Compra Quitada
+                                    // No módulo Contas: Compra Realizada, Pagamento Parcial ou Pagamento Quitado → Compra Quitada
+                                    // Verifica se todos os selecionados já estão totalmente pagos
+                                    const allFullyPaid = selectedOrders.every(order =>
+                                        order.status === Status_String.FullyPaid
+                                    );
+
+                                    if (allFullyPaid) {
+                                        return {
+                                            text: "Marcar como Compra Quitada",
+                                            status: Status_String.PaidPurchase,
+                                            color: "bg-green-600 hover:bg-green-700"
+                                        };
+                                    }
+
+                                    // Se não estão todos totalmente pagos, mostra ação genérica
                                     return {
                                         text: "Marcar como Compra Quitada",
                                         status: Status_String.PaidPurchase,

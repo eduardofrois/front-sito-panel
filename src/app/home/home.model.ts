@@ -26,26 +26,40 @@ export const useHomeModel = () => {
     const exitFunction = async (e: any) => {
         e.preventDefault();
         try {
-            await api.post("/user/logout")
+            await api.post("/user/logout", {}, {
+                withCredentials: true
+            });
         } catch (error) {
             console.error("Erro ao fazer logout:", error);
         }
 
-        // Deletar cookies usando cookies-next
-        deleteCookie("UN");
-        deleteCookie("UID");
-        deleteCookie("accessToken");
-        deleteCookie("UP");
-        deleteCookie("UU");
+        // Deletar cookies usando cookies-next com as mesmas opções usadas na criação
+        deleteCookie("UN", { path: "/", sameSite: "strict" });
+        deleteCookie("UID", { path: "/", sameSite: "strict" });
+        deleteCookie("UP", { path: "/", sameSite: "strict" });
+        deleteCookie("UU", { path: "/", sameSite: "strict" });
 
         // Deletar cookies usando js-cookie (para garantir que todos sejam removidos)
+        // O accessToken é HttpOnly e será deletado pelo backend
+        Cookies.remove("UN", { path: "/", sameSite: "strict" });
+        Cookies.remove("UID", { path: "/", sameSite: "strict" });
+        Cookies.remove("UP", { path: "/", sameSite: "strict" });
+        Cookies.remove("UU", { path: "/", sameSite: "strict" });
+
+        // Limpar qualquer cookie que possa ter sido definido sem path específico
         Cookies.remove("UN");
         Cookies.remove("UID");
-        Cookies.remove("accessToken");
         Cookies.remove("UP");
         Cookies.remove("UU");
 
+        // Aguardar um pouco para garantir que os cookies sejam deletados
+        await new Promise(resolve => setTimeout(resolve, 100));
+
         router.push("/");
+        // Forçar reload para garantir que o estado seja limpo
+        if (typeof window !== 'undefined') {
+            window.location.href = "/";
+        }
     }
 
     return {
