@@ -1,43 +1,75 @@
 import { Status } from "@/constants/order-status"
-import { zodResolver } from "@hookform/resolvers/zod"
 import { useQueryClient } from "@tanstack/react-query"
-import { useForm } from "react-hook-form"
-import z from "zod"
-import useMutationUpdateNewClientInOrder from "../orders/hooks/mutates/useMutateUpdateNewClientInOrder"
+import { useState } from "react"
+import useMutationAddOrdersToSolicitation from "../orders/hooks/mutates/useMutateAddOrdersToSolicitation"
 import useQueryGetOrdersByStatus from "../orders/hooks/useQueryGetOrdersByStatus"
-import { formSchema } from "./readytoship.interface"
+import useQueryGetAllSolicitations from "../orders/hooks/useQueryGetAllSolicitations"
+import useQueryGetClients from "../accounts/hooks/useQueryGetClients"
 
 export const useReadyToShipModel = () => {
-    const { data, isLoading } = useQueryGetOrdersByStatus(Status.ReadyForDelivery)
-    const { mutateAsync, isPending } = useMutationUpdateNewClientInOrder()
+    const [pagination, setPagination] = useState({
+        pageIndex: 1,
+        pageSize: 10,
+    });
+    
+    const [selectedOrders, setSelectedOrders] = useState<number[]>([])
+
+    const { data, isLoading } = useQueryGetOrdersByStatus(Status.ReadyForDelivery, {
+        pageNumber: pagination.pageIndex,
+        pageSize: pagination.pageSize
+    })
+    
+    const { data: clients, isLoading: isLoadingClients } = useQueryGetClients()
+    const { data: solicitations, isLoading: isLoadingSolicitations } = useQueryGetAllSolicitations({
+        pageNumber: 1,
+        pageSize: 100 // Buscar todas as solicitações para seleção
+    })
+    
+    const { mutateAsync: addOrdersToSolicitation, isPending: isPendingAddOrders } = useMutationAddOrdersToSolicitation()
 
     const queryClient = useQueryClient();
 
-    const form = useForm<z.infer<typeof formSchema>>({
-        resolver: zodResolver(formSchema),
-        defaultValues: {
-            client: "",
-            sale_price: 0
-        },
-    })
-
-    async function onSubmit(values: z.infer<typeof formSchema>, order_id: number, totalValue: number) {
-        const dto = {
-            order_id: order_id,
-            client: values.client,
-            sale_price: values.sale_price,
-            total_price: totalValue
+    async function handleAttachOrders(clientId: number | null, solicitationId: number | null) {
+        if (selectedOrders.length === 0) {
+            return;
         }
-        mutateAsync({ dto });
+
+        await addOrdersToSolicitation({
+            orders: selectedOrders,
+            existingSolicitation: solicitationId
+        });
+
+        // Se não há solicitation, criar nova com o cliente
+        if (!solicitationId && clientId) {
+            // O backend cria automaticamente uma nova solicitation
+            // Aqui apenas invalidamos as queries
+        }
+
+        setSelectedOrders([])
+        
         await queryClient.invalidateQueries({
             queryKey: ["getOrdersByStatus"],
-            exact: true,
+        })
+        await queryClient.invalidateQueries({
+            queryKey: ["getAllSolicitations"],
         })
     }
 
+    const ordersData = Array.isArray(data) ? data : (data?.data || [])
+
     return {
-        data, isLoading,
-        form,
-        onSubmit,
+        data: ordersData,
+        totalPages: Array.isArray(data) ? undefined : data?.totalPages,
+        isLoading,
+        clients,
+        isLoadingClients,
+        solicitations: Array.isArray(solicitations) ? solicitations : (solicitations?.data || []),
+        isLoadingSolicitations,
+        selectedOrders,
+        setSelectedOrders,
+        handleAttachOrders,
+        isPendingAddOrders,
+        pagination,
+        setPagination,
     }
 }

@@ -133,7 +133,9 @@ const statusColors = [
 
 export default function Page() {
     const { data: clients, isLoading: isLoadingClients } = useQueryGetClients()
-    const { data: orders, isLoading: isLoadingOrders } = useQueryGetAllOrders()
+    const { data: ordersData, isLoading: isLoadingOrders } = useQueryGetAllOrders()
+
+    const orders = Array.isArray(ordersData) ? ordersData : (ordersData?.data || [])
 
     const processedData = useMemo(() => {
         return processOrdersData(orders)

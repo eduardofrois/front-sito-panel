@@ -8,7 +8,7 @@ import { Card, CardContent } from "@/components/ui/card"
 import { getCardStylesFromOrder } from "@/constants/card-state-helper"
 import { Status_String } from "@/constants/order-status"
 import { returnDateInStatus } from "@/functions/format-functions"
-import { Check, Eye, EyeOff } from "lucide-react"
+import { Check } from "lucide-react"
 import type React from "react"
 import type { Dispatch, SetStateAction } from "react"
 import { ButtonReadyToSend } from "./button-ready-to-send"
@@ -20,10 +20,6 @@ interface AccordionOrderCardProps {
   handleSelectOrder: Dispatch<SetStateAction<number[]>>
   confirmedOrder: number[]
   onUpdate: (orders: number[], value: number) => void
-  showAllSensitiveInfo: boolean
-  toggleFieldVisibility: (orderId: number, fieldName: string) => void
-  isFieldVisible: (orderId: number, fieldName: string) => boolean
-  shouldShowField: (orderId: number, fieldName: string) => boolean
 }
 
 export const AccordionOrderCard = ({
@@ -32,17 +28,9 @@ export const AccordionOrderCard = ({
   handleSelectOrder,
   confirmedOrder,
   onUpdate,
-  showAllSensitiveInfo,
-  toggleFieldVisibility,
-  isFieldVisible,
-  shouldShowField,
   solicitations
 }: AccordionOrderCardProps) => {
-  const profit = order.sale_price - order.cost_price
-  const profitMargin = ((profit / order.sale_price) * 100).toFixed(1)
   const totalValue = order.sale_price * order.amount
-
-  console.log("solicitation dentro do componente", solicitations)
 
   const isSelected = confirmedOrder.includes(order.id)
   const cardStyles = getCardStylesFromOrder(order, isSelected)
@@ -55,78 +43,6 @@ export const AccordionOrderCard = ({
     } else {
       handleSelectOrder((prev) => [...(prev ?? []), order.id])
     }
-  }
-
-  const renderSensitiveField = (fieldName: string, icon: React.ElementType, label: string, value: string) => {
-    const Icon = icon
-    const shouldShow = showAllSensitiveInfo || shouldShowField(order.id, fieldName)
-    const isIndividuallyVisible = isFieldVisible(order.id, fieldName)
-
-    return (
-      <div key={label} className="flex items-center gap-3 min-w-0">
-        <Icon className={`w-4 h-4 flex-shrink-0 ${isSelected ? "text-white" : "text-purple-600"}`} />
-        <div className="min-w-0 flex-1">
-          <div className="flex items-center justify-between mb-1">
-            <p
-              className={`text-xs font-medium uppercase tracking-wide ${isSelected ? "text-white/70" : "text-gray-500"}`}
-            >
-              {label}
-            </p>
-            <Button
-              variant="ghost"
-              size="sm"
-              className={`h-6 w-6 p-0 ${isSelected ? "hover:bg-white/10" : "hover:bg-gray-100"}`}
-              onClick={(e) => {
-                e.stopPropagation()
-                toggleFieldVisibility(order.id, fieldName)
-              }}
-            >
-              {isIndividuallyVisible ? (
-                <EyeOff className={`w-3 h-3 ${isSelected ? "text-white/70" : "text-gray-500"}`} />
-              ) : (
-                <Eye className={`w-3 h-3 ${isSelected ? "text-white/70" : "text-gray-500"}`} />
-              )}
-            </Button>
-          </div>
-          <p className={`font-semibold truncate ${isSelected ? "text-white" : "text-black"}`}>
-            {shouldShow ? value : "••••••••"}
-          </p>
-        </div>
-      </div>
-    )
-  }
-
-  const renderSensitiveFinancialData = (label: string, value: number, fieldName: string) => {
-    const shouldShow = shouldShowField(order.id, fieldName)
-    const isIndividuallyVisible = isFieldVisible(order.id, fieldName)
-
-    return (
-      <div
-        className={`text-center p-3 sm:p-4 rounded-lg border ${isSelected ? "bg-white/5 border-white/20" : "bg-white border-gray-200"}`}
-      >
-        <div className="flex items-center justify-center gap-2 mb-1">
-          <p className={`text-xs font-medium ${isSelected ? "text-white/70" : "text-gray-500"}`}>{label}</p>
-          <Button
-            variant="ghost"
-            size="sm"
-            className={`h-4 w-4 p-0 ${isSelected ? "hover:bg-white/10" : "hover:bg-gray-100"}`}
-            onClick={(e) => {
-              e.stopPropagation()
-              toggleFieldVisibility(order.id, fieldName)
-            }}
-          >
-            {isIndividuallyVisible ? (
-              <EyeOff className={`w-3 h-3 ${isSelected ? "text-white/70" : "text-gray-500"}`} />
-            ) : (
-              <Eye className={`w-3 h-3 ${isSelected ? "text-white/70" : "text-gray-500"}`} />
-            )}
-          </Button>
-        </div>
-        <p className={`font-bold text-sm sm:text-base ${isSelected ? "text-white" : "text-black"}`}>
-          {shouldShow ? `R$ ${value.toFixed(2)}` : "R$ ••••"}
-        </p>
-      </div>
-    )
   }
 
   return (
@@ -170,7 +86,7 @@ export const AccordionOrderCard = ({
                   <p
                     className={`text-sm sm:text-base md:text-lg font-bold break-words ${isSelected ? "text-white" : "text-black"}`}
                   >
-                    {shouldShowField(order.id, "totalValue") ? `R$ ${totalValue.toFixed(2)}` : "R$ ••••••"}
+                    R$ {totalValue.toFixed(2)}
                   </p>
                   <p className={`text-xs sm:text-sm ${isSelected ? "text-white/80" : "text-gray-600"}`}>
                     {order.amount} {order.amount === 1 ? "item" : "itens"}
@@ -198,16 +114,6 @@ export const AccordionOrderCard = ({
                 </ul>
               </div>
 
-              <div className="bg-red-200">
-                <p>
-                  quantidade de produtos nesse pedido: {0}
-                </p>
-                {solicitations &&
-                  <CardContent>
-                    teste
-                  </CardContent>
-                }
-              </div>
               <div className="flex flex-col gap-2 sm:gap-3 mt-4">
                 {(order.status === Status_String.ConfirmSale || 
                   order.status === Status_String.PartialPayment || 

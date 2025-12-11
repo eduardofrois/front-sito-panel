@@ -34,7 +34,10 @@ async function getAllOrders(pageNumber: number, pageSize: number) {
     }
 }
 
-export default function useQueryGetAllOrders({ pageNumber, pageSize }: PaginationInterface) {
+export default function useQueryGetAllOrders(pagination?: PaginationInterface) {
+    const pageNumber = pagination?.pageNumber ?? 1
+    const pageSize = pagination?.pageSize ?? 10
+
     return useQuery({
         queryKey: ["getAllOrders", pageNumber, pageSize],
         queryFn: () => getAllOrders(pageNumber, pageSize)

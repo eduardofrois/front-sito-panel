@@ -4,6 +4,7 @@ import { useState } from "react"
 import useQueryGetPendingPaid from "../orders/hooks/mutates/useMutateGetOrdersPaidPending"
 import useMutationUpdateStatusOrder from "../orders/hooks/mutates/useMutateUpdateStatusOrder"
 import useQueryGetAllSolicitations from "../orders/hooks/useQueryGetAllSolicitations"
+import useQueryGetOrdersByStatus from "../orders/hooks/useQueryGetOrdersByStatus"
 import { Order } from "../orders/order.interface"
 import useQueryGetClients from "./hooks/useQueryGetClients"
 
@@ -16,6 +17,10 @@ export const useAccountsModel = () => {
         pageIndex: 1,
         pageSize: 10,
     });
+    const [paginationAccounts, setPaginationAccounts] = useState({
+        pageIndex: 1,
+        pageSize: 10,
+    });
     const [confirmedOrder, setConfirmedOrder] = useState<number[]>([])
 
     const { data: clients, isLoading: isLoadingClients } = useQueryGetClients()
@@ -24,6 +29,12 @@ export const useAccountsModel = () => {
         pageSize: paginationPending.pageSize
     })
     const { mutateAsync, isPending: isUpdatingStatus } = useMutationUpdateStatusOrder();
+
+    // Query para buscar orders por status (usado no tab "contas a pagar")
+    const { data: ordersByStatus, isLoading: isLoadingOrdersByStatus } = useQueryGetOrdersByStatus(Status.MoreThenOne, { 
+        pageNumber: paginationAccounts.pageIndex, 
+        pageSize: paginationAccounts.pageSize 
+    });
 
     const { data: solicitations, isLoading: isLoadingSolicitations, refetch: refetchSolicitation } = useQueryGetAllSolicitations({ pageNumber: pagination.pageIndex, pageSize: pagination.pageSize });
 
@@ -49,6 +60,9 @@ export const useAccountsModel = () => {
         })
         await queryClient.invalidateQueries({
             queryKey: ["getAllSolicitations"],
+        })
+        await queryClient.invalidateQueries({
+            queryKey: ["getPendingPaidOrders"],
         })
         await refetchSolicitation()
     }
@@ -89,6 +103,8 @@ export const useAccountsModel = () => {
         confirmedOrder, setConfirmedOrder,
         isUpdatingStatus,
         paginationPending, setPaginationPending,
-        pagination, setPagination
+        pagination, setPagination,
+        ordersByStatus, isLoadingOrdersByStatus,
+        paginationAccounts, setPaginationAccounts
     }
 }

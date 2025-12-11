@@ -102,6 +102,9 @@ export const AccountsReceive = ({ isLoading, orders, pagination, setPagination, 
       await queryClient.invalidateQueries({
         queryKey: ["getPendingPaidOrders"],
       })
+      
+      // Resetar seleção após processar pagamentos
+      setSelectedOrders(new Set())
 
       form.reset()
       setSelectedOrders(new Set())
@@ -357,6 +360,7 @@ export const AccountsReceive = ({ isLoading, orders, pagination, setPagination, 
           pageIndex={pagination.pageIndex}
           pageSize={pagination.pageSize}
           totalPages={totalPages}
+          currentDataLength={orders.length}
           onPageChange={(page: number) => setPagination(prev => ({ ...prev, pageIndex: page }))}
           disabled={isLoading}
         />

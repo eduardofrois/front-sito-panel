@@ -26,9 +26,6 @@ export const useOrdersModel = () => {
   const [valuesForm, setValuesForm] = useState<CreateOrderSchema[]>([])
   const [confirmedOrder, setConfirmedOrder] = useState<number[]>([])
 
-  const [showAllSensitiveInfo, setShowAllSensitiveInfo] = useState(false)
-  const [fieldVisibility, setFieldVisibility] = useState<Record<string, Record<string, boolean>>>({})
-
   const queryClient = useQueryClient()
 
   const form = useForm<z.infer<typeof orderSchema>>({
@@ -71,24 +68,6 @@ export const useOrdersModel = () => {
     form.reset()
   }
 
-  const toggleFieldVisibility = (orderId: number, fieldName: string) => {
-    setFieldVisibility((prev) => ({
-      ...prev,
-      [orderId]: {
-        ...prev[orderId],
-        [fieldName]: !prev[orderId]?.[fieldName],
-      },
-    }))
-  }
-
-  const isFieldVisible = (orderId: number, fieldName: string) => {
-    return fieldVisibility[orderId]?.[fieldName] || false
-  }
-
-  const shouldShowField = (orderId: number, fieldName: string) => {
-    return showAllSensitiveInfo || isFieldVisible(orderId, fieldName)
-  }
-
   form.setValue("total_price", (form.watch("sale_price") ?? 0) * (form.watch("amount") ?? 1))
 
   useEffect(() => {
@@ -109,11 +88,6 @@ export const useOrdersModel = () => {
     setConfirmedOrder,
     isPendingUpdateStatusOrder,
     onUpdate,
-    showAllSensitiveInfo,
-    setShowAllSensitiveInfo,
-    toggleFieldVisibility,
-    isFieldVisible,
-    shouldShowField,
     solicitations, isLoadingSolicitations,
     addOrderAndSolicitation, isPendingAddOrderAndSolicitation,
     pagination, setPagination

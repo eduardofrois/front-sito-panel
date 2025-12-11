@@ -9,6 +9,7 @@ export enum Status {
     Checked = 8,
     PartialPayment = 9,
     FullyPaid = 10,
+    DeliveredToClient = 11,
 }
 
 export enum Status_String {
@@ -20,5 +21,6 @@ export enum Status_String {
     ToCheck = "A Conferir",
     Checked = "Conferido",
     PartialPayment = "Pagamento Parcial",
-    FullyPaid = "Pagamento Quitado"
+    FullyPaid = "Pagamento Quitado",
+    DeliveredToClient = "Entregue ao Cliente"
 }

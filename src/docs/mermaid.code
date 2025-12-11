@@ -1,47 +1,55 @@
-flowchart LR
+flowchart TB
 
-%% ---------- LANE 1: SOLICITATION ----------
-subgraph S[SOLICITATION]
-    S1["Início: Criar Solicitation<br/>• Usuário abre uma nova solicitação<br/>• Pode conter N pedidos independentes<br/>• solicitation.orders = (empty)"]
-    S2["Adicionar Order na Solicitation<br/>• Vincula ID da order ao array de orders"]
-end
+    %% ---------- LANE 1: SOLICITATION ----------
+    subgraph S[SOLICITATION]
+        direction TB
+        S1(["Início: Criar Solicitation<br/>• Nova solicitação vazia<br/>• solicitation.orders = []"])
+        S2["Adicionar Order na Solicitation<br/>• Adiciona ao array de orders"]
+    end
 
-%% ---------- LANE 2: ORDER LIFECYCLE ----------
-subgraph O[ORDER]
-    O1["Criar Order<br/>status = Compra Pendente<br/>status_conference = null<br/>date_order = null<br/>date_purchase_order = null<br/>date_conference = null"]
+    %% ---------- LANE 2: ORDER LIFECYCLE ----------
+    subgraph O[ORDER LIFECYCLE]
+        direction TB
+        O1["Criar Order<br/>🟢 status = Pendente de Compra<br/>🗓️ date_order = null<br/>🗓️ date_purchase_order = null<br/>🗓️ date_conference = null"]
 
-    O2["Compra Realizada<br/>Alterações:<br/>• status → Compra Realizada<br/>• date_order preenchido<br/>• Criar registro em Contas a Pagar"]
+        O2["Marcar Compra Realizada<br/>🔵 status → Compra Realizada<br/>🗓️ date_order = NOW()<br/>➡️ Gera Conta a Pagar"]
 
-    O3["Efetivar Compra<br/>Alterações:<br/>• status → Compra Quitada<br/>• date_purchase_order preenchido<br/>• status_conference → A Conferir"]
+        O3["Efetivar Pagamento (Baixa)<br/>🟢 status → Compra Quitada<br/>🗓️ date_purchase_order = NOW()<br/>🟠 status_conference → A Conferir<br/>✅ Baixa em Conta a Pagar"]
 
-    O4["Conferência Realizada<br/>Alterações:<br/>• status_conference → Conferido<br/>• date_conference preenchido"]
+        O4["Aguardando Conferência<br/>Status: 🟢 Compra Quitada<br/>Conf: 🟠 A Conferir"]
 
-    O5["Cliente desistiu<br/>Transformar em Pronta Entrega<br/>Alterações:<br/>• status → Pronta a Entrega<br/>• Desvincular client<br/>• Criar registro em Contas a Receber"]
-end
+        O5["Finalizar Conferência<br/>Conf: 🟢 Conferido<br/>🗓️ date_conference = NOW()"]
 
-%% ---------- LANE 3: CONTAS A PAGAR ----------
-subgraph CP[CONTAS A PAGAR]
-    CP1["Gerar Conta a Pagar<br/>Criado ao marcar Compra Realizada<br/>• Valor = cost_price * amount<br/>• Vinculado à Order"]
-    CP2["Baixa de Pagamento<br/>Ocorre quando status = Compra Quitada"]
-end
+        O6["Entregar ao Cliente<br/>🟢 status → Entregue<br/>🗓️ date_delivery = NOW()"]
 
-%% ---------- LANE 4: CONFERÊNCIA ----------
-subgraph C[CONFERÊNCIA]
-    C1["Pedido aguardando conferência<br/>status_conference = A Conferir"]
-    C2["Conferência concluída<br/>status_conference = Conferido<br/>date_conference salvo"]
-end
+        %% Alternativo
+        O_Alt1["Desistência / Alteração"]
+        O_Alt2["Transformar em Pronta Entrega<br/>🟣 status → Pronta Entrega<br/>👤 Client = null<br/>➡️ Gera Conta a Receber"]
+    end
 
-%% ---------- LANE 5: PRONTA ENTREGA ----------
-subgraph PE[PRONTA ENTREGA]
-    PE1["Transformação em Pronta Entrega<br/>status = Pronta a Entrega<br/>Order deixa de ter client"]
-    PE2["Gerar Conta a Receber<br/>Vinculada ao estoque de pronta entrega"]
-end
+    %% ---------- LANE 3: FINANCEIRO ----------
+    subgraph F[FINANCEIRO]
+        direction TB
+        CP1["Conta a Pagar (Criada)<br/>Vinc: Order"]
+        CP2["Conta a Pagar (Baixada)"]
+        CR1["Conta a Receber (Criada)<br/>Vinc: Pronta Entrega"]
+    end
 
-%% ---------- FLUXO ----------
-S1 --> S2 --> O1
-O1 --> O2 --> CP1
-CP1 --> O3 --> CP2
-O3 --> C1 --> C2 --> O4
+    %% RELAÇÕES
+    S1 --> S2 --> O1
+    
+    %% Fluxo Principal
+    O1 -- "Confirmar Compra" --> O2
+    O2 -- "Criação Automática" --> CP1
+    CP1 -.-> O3
+    O2 -- "Pagar" --> O3
+    O3 -- "Baixa Automática" --> CP2
+    O3 --> O4
+    O4 -- "Conferir" --> O5
+    O5 -- "Entregar" --> O6
 
-%% Caminho alternativo: Cliente desistiu
-O1 --> O5 --> PE1 --> PE2
+    %% Fluxo Alternativo
+    O1 -.-> O_Alt1
+    O2 -.-> O_Alt1
+    O_Alt1 --> O_Alt2
+    O_Alt2 -- "Criação Automática" --> CR1

@@ -11,6 +11,7 @@ interface PaginationProps {
   onPageChange: (page: number) => void
   disabled?: boolean
   className?: string
+  currentDataLength?: number // Tamanho dos dados atuais para verificar se há mais páginas quando não temos totalPages
 }
 
 export const Pagination = ({
@@ -21,8 +22,13 @@ export const Pagination = ({
   onPageChange,
   disabled = false,
   className = "",
+  currentDataLength,
 }: PaginationProps) => {
-  const hasNextPage = totalPages ? pageIndex < totalPages : true
+  // Se temos totalPages, usa isso para determinar se há próxima página
+  // Caso contrário, verifica se o tamanho dos dados é menor que pageSize (última página)
+  const hasNextPage = totalPages 
+    ? pageIndex < totalPages 
+    : (currentDataLength !== undefined ? currentDataLength >= pageSize : true)
   const hasPreviousPage = pageIndex > 1
 
   const handlePrevious = () => {

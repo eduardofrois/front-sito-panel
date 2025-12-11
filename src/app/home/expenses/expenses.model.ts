@@ -8,8 +8,11 @@ import useQueryGetAllExpenses from "./hooks/useQueryGetAllExpenses";
 export const useExpensesModel = () => {
     const queryClient = useQueryClient()
 
+    const [pagination, setPagination] = useState({
+        pageIndex: 1,
+        pageSize: 10,
+    });
     const [searchTerm, setSearchTerm] = useState("")
-    const [showSensitiveData, setShowSensitiveData] = useState(false)
     const [isModalOpen, setIsModalOpen] = useState(false)
     const [editingExpense, setEditingExpense] = useState<Expenses | null>(null)
     const [formData, setFormData] = useState<ExpenseFormData>({
@@ -21,15 +24,20 @@ export const useExpensesModel = () => {
         performed_at: new Date().toISOString().split("T")[0],
     })
 
-    const { data, isLoading } = useQueryGetAllExpenses();
+    const { data, isLoading } = useQueryGetAllExpenses({
+        pageNumber: pagination.pageIndex,
+        pageSize: pagination.pageSize
+    });
     const { mutateAsync } = useMutationCreateExpense()
     const { mutateAsync: updateAsyn } = useMutationUpdateExpense()
 
+    const ordersData = Array.isArray(data) ? data : (data?.data || [])
+
     const filteredData = useMemo(() => {
-        if (!searchTerm.trim()) return data
+        if (!searchTerm.trim()) return ordersData
 
         const searchLower = searchTerm.toLowerCase()
-        return data.filter((expense: Expenses) => {
+        return ordersData.filter((expense: Expenses) => {
             return (
                 expense.description.toLowerCase().includes(searchLower) ||
                 expense.price.toString().includes(searchLower) ||
@@ -37,7 +45,7 @@ export const useExpensesModel = () => {
                 expense.expense_date.includes(searchLower)
             )
         })
-    }, [data, searchTerm])
+    }, [ordersData, searchTerm])
 
     const totalExpenses = useMemo(() => {
         return filteredData?.reduce((sum: number, expense: Expenses) => sum + expense.price, 0)
@@ -81,9 +89,10 @@ export const useExpensesModel = () => {
     }
 
     return {
-        data, isLoading,
+        data: ordersData,
+        totalPages: Array.isArray(data) ? undefined : data?.totalPages,
+        isLoading,
         searchTerm, setSearchTerm,
-        showSensitiveData, setShowSensitiveData,
         isModalOpen, setIsModalOpen,
         editingExpense, setEditingExpense,
         totalExpenses,
@@ -92,6 +101,8 @@ export const useExpensesModel = () => {
         filteredData,
         formData, setFormData,
         handleSaveExpense,
-        handleOpenEditExpenses
+        handleOpenEditExpenses,
+        pagination,
+        setPagination
     }
 }

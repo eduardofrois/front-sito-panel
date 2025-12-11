@@ -69,6 +69,7 @@ export const AccountsList = ({
                     pageIndex={pagination.pageIndex}
                     pageSize={pagination.pageSize}
                     totalPages={totalPages}
+                    currentDataLength={data.length}
                     onPageChange={(page) => setPagination(prev => ({ ...prev, pageIndex: page }))}
                     disabled={isLoading}
                 />

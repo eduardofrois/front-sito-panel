@@ -13,9 +13,22 @@ async function getPendingPaid(pageNumber: number, pageSize: number) {
 
     if (!response.data.flag) {
         toast.error(response.data.message)
+        return {
+            data: [],
+            totalCount: 0,
+            pageNumber: 1,
+            pageSize: 10,
+            totalPages: 0
+        }
     }
 
-    return response.data.data
+    return {
+        data: response.data.data || [],
+        totalCount: response.data.totalCount || 0,
+        pageNumber: response.data.pageNumber || pageNumber,
+        pageSize: response.data.pageSize || pageSize,
+        totalPages: response.data.totalPages || 0
+    }
 }
 
 export default function useQueryGetPendingPaid({ pageNumber, pageSize }: PaginationInterface) {

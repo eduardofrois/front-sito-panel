@@ -11,7 +11,7 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "..
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
 import { DialogFormOrder } from "./dialog-form-order";
-import { OrderItemCard } from "./order-item.card";
+import { OrdersTable } from "./orders-table";
 
 interface AccordionSolicitationCardProps {
     solicitation: Solicitation;
@@ -137,12 +137,23 @@ export const AccordionSolicitationCard = ({
                     order.status_conference === Status_String.ToCheck
                 );
 
-                if (isProntaEntrega) {
+                // Verifica se TODOS já foram conferidos (prontos para entrega)
+                const isConferenciaFinalizada = selectedOrders.every(order =>
+                    order.status === Status_String.PaidPurchase &&
+                    order.status_conference === Status_String.Checked
+                );
+
+                if (isConferenciaFinalizada) {
+                    await onUpdate(confirmedOrder, Status.DeliveredToClient); // Marca como Entregue
+                } else if (isProntaEntrega) {
                     await onUpdate(confirmedOrder, Status.ReadyForDelivery); // Transforma em Pronta Entrega
                 } else if (isConferencia) {
                     await onUpdate(confirmedOrder, Status.Checked); // Confirma conferência
-                } else {
+                } else if (selectedOrders.every(order => order.status === Status_String.PendingPurchase)) {
                     await onUpdate(confirmedOrder, Status.ConfirmSale); // Confirma compra
+                } else {
+                    // Fluxo de desistência / Pronta entrega para estados mistos ou intermediários
+                    await onUpdate(confirmedOrder, Status.ReadyForDelivery);
                 }
             } else if (type === "account") {
                 await onUpdate(confirmedOrder, Status.PaidPurchase);  // Quita
@@ -233,8 +244,11 @@ export const AccordionSolicitationCard = ({
                                 Selecionar todos válidos
                             </Button>
                         )}
-                        {confirmedOrder.length > 0 && (() => {
-                            const selectedOrders = solicitation.orderJoin?.filter((order: Order) => confirmedOrder.includes(order.id)) || [];
+                        {(() => {
+                            const selectedOrders = solicitation.orderJoin?.filter(order => confirmedOrder.includes(order.id)) || [];
+                            const hasSelectedInThisCard = selectedOrders.length > 0;
+
+                            if (!hasSelectedInThisCard) return null;
 
                             // Determina qual será o próximo status baseado nos pedidos selecionados
                             const getNextStatus = () => {
@@ -262,42 +276,69 @@ export const AccordionSolicitationCard = ({
                                 }
 
                                 // No módulo Pedidos: verifica o status atual dos selecionados
-                                const isProntaEntrega = selectedOrders.every(order =>
-                                    order.status === Status_String.PaidPurchase &&
-                                    order.status_conference === Status_String.Checked
-                                );
+                                if (type === "order") {
+                                    const isProntaEntrega = selectedOrders.every(order =>
+                                        order.status === Status_String.PaidPurchase &&
+                                        order.status_conference === Status_String.Checked
+                                    );
 
-                                const isConferencia = selectedOrders.every(order =>
-                                    order.status === Status_String.PaidPurchase &&
-                                    order.status_conference === Status_String.ToCheck
-                                );
+                                    const isConferencia = selectedOrders.every(order =>
+                                        order.status === Status_String.PaidPurchase &&
+                                        order.status_conference === Status_String.ToCheck
+                                    );
 
-                                const isCompraPendente = selectedOrders.every(order =>
-                                    order.status === Status_String.PendingPurchase
-                                );
+                                    const isConferenciaFinalizada = selectedOrders.every(order =>
+                                        order.status === Status_String.PaidPurchase &&
+                                        order.status_conference === Status_String.Checked
+                                    );
 
-                                if (isProntaEntrega) {
-                                    return {
-                                        text: "Marcar como Pronta a Entrega",
-                                        status: Status_String.ReadyForDelivery,
-                                        color: "bg-purple-600 hover:bg-purple-700"
-                                    };
-                                }
+                                    const isCompraPendente = selectedOrders.every(order =>
+                                        order.status === Status_String.PendingPurchase
+                                    );
 
-                                if (isConferencia) {
-                                    return {
-                                        text: "Marcar como Conferido",
-                                        status: Status_String.Checked,
-                                        color: "bg-emerald-600 hover:bg-emerald-700"
-                                    };
-                                }
+                                    if (isConferenciaFinalizada) {
+                                        return {
+                                            text: "Marcar como Entregue",
+                                            status: Status_String.DeliveredToClient,
+                                            color: "bg-gray-600 hover:bg-gray-700"
+                                        };
+                                    }
 
-                                if (isCompraPendente) {
-                                    return {
-                                        text: "Marcar como Compra Realizada",
-                                        status: Status_String.ConfirmSale,
-                                        color: "bg-blue-600 hover:bg-blue-700"
-                                    };
+                                    if (isProntaEntrega) {
+                                        return {
+                                            text: "Marcar como Pronta a Entrega",
+                                            status: Status_String.ReadyForDelivery,
+                                            color: "bg-purple-600 hover:bg-purple-700"
+                                        };
+                                    }
+
+                                    if (isConferencia) {
+                                        return {
+                                            text: "Marcar como Conferido",
+                                            status: Status_String.Checked,
+                                            color: "bg-emerald-600 hover:bg-emerald-700"
+                                        };
+                                    }
+
+                                    if (isCompraPendente) {
+                                        return {
+                                            text: "Marcar como Compra Realizada",
+                                            status: Status_String.ConfirmSale,
+                                            color: "bg-blue-600 hover:bg-blue-700"
+                                        };
+                                    }
+
+                                    // Fluxo Alternativo: Desistência / Transformar em Pronta Entrega
+                                    // Se não cair nos casos acima (Happy Path), permite transformar em Pronta Entrega
+                                    // desde que não esteja já em Pronta Entrega
+                                    const isMixedOrPending = !isProntaEntrega;
+                                    if (isMixedOrPending) {
+                                        return {
+                                            text: "Transformar em Pronta Entrega",
+                                            status: Status_String.ReadyForDelivery,
+                                            color: "bg-purple-600 hover:bg-purple-700"
+                                        };
+                                    }
                                 }
 
                                 // Caso misto ou não identificado
@@ -329,6 +370,23 @@ export const AccordionSolicitationCard = ({
                                             </>
                                         )}
                                     </Button>
+                                    {nextStatus.status === Status_String.DeliveredToClient && (
+                                        <Button
+                                            variant="secondary"
+                                            onClick={async () => {
+                                                setIsUpdatingStatus(true);
+                                                try {
+                                                    await onUpdate(confirmedOrder, Status_String.ReadyForDelivery);
+                                                } finally {
+                                                    setIsUpdatingStatus(false);
+                                                }
+                                            }}
+                                            disabled={isUpdatingStatus}
+                                            className="w-full sm:w-auto min-h-[44px] text-sm sm:text-base py-2.5 sm:py-3 bg-purple-100 text-purple-700 hover:bg-purple-200"
+                                        >
+                                            Transformar em Pronta Entrega
+                                        </Button>
+                                    )}
                                     <Button
                                         variant="outline"
                                         onClick={() => setConfirmedOrder([])}
@@ -339,7 +397,7 @@ export const AccordionSolicitationCard = ({
                                 </>
                             );
                         })()}
-                    </div>
+                    </div >
                     <div className="mb-3 sm:mb-4 pt-2 space-y-3">
                         <div className="flex items-center justify-between gap-2">
                             <h4 className="text-xs sm:text-sm font-semibold text-gray-700 flex items-center gap-2">
@@ -409,15 +467,12 @@ export const AccordionSolicitationCard = ({
                     <div className="flex flex-col gap-2 sm:gap-3">
                         {paginatedOrders.length > 0 ? (
                             <>
-                                {paginatedOrders.map((item: Order) => (
-                                    <OrderItemCard
-                                        key={item.id}
-                                        type={type}
-                                        item={item}
-                                        isSelected={confirmedOrder.includes(item.id)}
-                                        onToggleSelect={() => handleToggleSelect(item)}
-                                    />
-                                ))}
+                                <OrdersTable
+                                    orders={paginatedOrders}
+                                    selectedOrders={confirmedOrder}
+                                    onToggleSelect={handleToggleSelect}
+                                    type={type}
+                                />
 
                                 {/* Controles de paginação */}
                                 {hasMoreItems && !showAll && (

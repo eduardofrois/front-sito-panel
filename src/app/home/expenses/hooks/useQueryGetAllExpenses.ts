@@ -2,24 +2,44 @@ import api from "@/services/api";
 import { useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
 
-async function getAllExpenses() {
-    const response = await api.get("/expenses");
+interface PaginationInterface {
+    pageNumber: number;
+    pageSize: number;
+}
+
+async function getAllExpenses(pageNumber: number, pageSize: number) {
+    const response = await api.get(`/expenses?pageNumber=${pageNumber}&pageSize=${pageSize}`);
 
     if (!response.data.flag) {
-        toast.error("Erro ao buscars dispesas", {
+        toast.error("Erro ao buscar despesas", {
             description: response.data.message,
             duration: 5000,
             closeButton: true
         })
-        return []
+        return {
+            data: [],
+            totalCount: 0,
+            pageNumber: 1,
+            pageSize: 10,
+            totalPages: 0
+        }
     }
 
-    return response.data.data
+    return {
+        data: response.data.data || [],
+        totalCount: response.data.totalCount || 0,
+        pageNumber: response.data.pageNumber || pageNumber,
+        pageSize: response.data.pageSize || pageSize,
+        totalPages: response.data.totalPages || 0
+    }
 }
 
-export default function useQueryGetAllExpenses() {
+export default function useQueryGetAllExpenses(pagination?: PaginationInterface) {
+    const pageNumber = pagination?.pageNumber ?? 1
+    const pageSize = pagination?.pageSize ?? 10
+    
     return useQuery({
-        queryKey: ["getAllExpenses"],
-        queryFn: getAllExpenses
+        queryKey: ["getAllExpenses", pageNumber, pageSize],
+        queryFn: () => getAllExpenses(pageNumber, pageSize)
     })
 }

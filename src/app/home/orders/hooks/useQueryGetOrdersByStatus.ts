@@ -34,7 +34,10 @@ async function getOrdersByStatus(status: number, pageNumber: number, pageSize: n
     }
 }
 
-export default function useQueryGetOrdersByStatus(status: number, { pageNumber, pageSize }: PaginationInterface) {
+export default function useQueryGetOrdersByStatus(status: number, pagination?: PaginationInterface) {
+    const pageNumber = pagination?.pageNumber ?? 1
+    const pageSize = pagination?.pageSize ?? 10
+
     return useQuery({
         queryKey: ["getOrdersByStatus", status, pageNumber, pageSize],
         queryFn: () => getOrdersByStatus(status, pageNumber, pageSize),

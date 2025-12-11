@@ -242,6 +242,7 @@ export const ShoppingView = ({
         pageIndex={pagination.pageIndex}
         pageSize={pagination.pageSize}
         totalPages={solicitationsTotalPages}
+        currentDataLength={solicitationsData.length}
         onPageChange={(page) => setPagination(prev => ({ ...prev, pageIndex: page }))}
         disabled={isLoadingSolicitations}
       />

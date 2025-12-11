@@ -12,12 +12,17 @@ type AccountsViewProps = ReturnType<typeof useAccountsModel>
 export const AccountsView = (props: AccountsViewProps) => {
     const { selectedOrders, setSelectedOrders, totalValueToPay, onUpdate, handleCardClick, canSelectCard, firstSelectedOrder, isLoadingPending,
         confirmedOrder, setConfirmedOrder,
-        ordersPending, isLoadingSolicitations, solicitations, isUpdatingStatus, paginationPending, setPaginationPending, pagination, setPagination } = props
+        ordersPending, isLoadingSolicitations, solicitations, isUpdatingStatus, paginationPending, setPaginationPending, pagination, setPagination,
+        ordersByStatus, isLoadingOrdersByStatus, paginationAccounts, setPaginationAccounts } = props
 
-    if (isLoadingSolicitations) return <IsLoadingCard />
+    if (isLoadingSolicitations || isLoadingOrdersByStatus) return <IsLoadingCard />
 
     const solicitationsData = Array.isArray(solicitations) ? solicitations : (solicitations?.data || [])
-    if (solicitationsData.length === 0) return <NotFoundOrder />
+    const ordersData = Array.isArray(ordersByStatus) ? ordersByStatus : (ordersByStatus?.data || [])
+    
+    // Para contas a pagar, usa solicitations que contém os orders
+    // Mas precisamos garantir que os orders estejam disponíveis
+    if (solicitationsData.length === 0 && ordersData.length === 0) return <NotFoundOrder />
 
     return (
         <div className="pb-6">
@@ -58,10 +63,10 @@ export const AccountsView = (props: AccountsViewProps) => {
                 <TabsContent value="accounts-receive" className="mt-0 p-4 sm:p-6">
                     <AccountsReceive
                         isLoading={isLoadingPending}
-                        orders={ordersPending || []}
+                        orders={Array.isArray(ordersPending) ? ordersPending : (ordersPending?.data || [])}
                         pagination={paginationPending}
                         setPagination={setPaginationPending}
-                        totalPages={ordersPending?.totalPages}
+                        totalPages={Array.isArray(ordersPending) ? undefined : ordersPending?.totalPages}
                     />
                 </TabsContent>
             </Tabs>

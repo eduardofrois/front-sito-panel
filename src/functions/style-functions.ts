@@ -5,7 +5,7 @@ import { Status_String } from "@/constants/order-status";
  */
 export const getStatusColor = (status: string | null | undefined): string => {
     if (!status) return "bg-gray-100 text-gray-800 border-gray-200";
-    
+
     const statusColors: Record<string, string> = {
         [Status_String.PendingPurchase]: "bg-yellow-100 text-yellow-800 border-yellow-200",
         [Status_String.SaleToRecive]: "bg-blue-100 text-blue-800 border-blue-200",
@@ -16,6 +16,7 @@ export const getStatusColor = (status: string | null | undefined): string => {
         [Status_String.Checked]: "bg-emerald-100 text-emerald-800 border-emerald-200",
         [Status_String.PartialPayment]: "bg-amber-100 text-amber-800 border-amber-200",
         [Status_String.FullyPaid]: "bg-teal-100 text-teal-800 border-teal-200",
+        [Status_String.DeliveredToClient]: "bg-gray-100 text-gray-800 border-gray-200",
     };
 
     return statusColors[status] || "bg-gray-100 text-gray-800 border-gray-200";
@@ -144,6 +145,17 @@ export const getOrderCardStyles = (
             text: "text-cyan-900",
             accentBorder: "bg-cyan-400",
             hover: "hover:bg-cyan-100 hover:border-cyan-300",
+        };
+    }
+
+    // Entregue ao Cliente - Cinza (finalizado/arquivado)
+    if (status === Status_String.DeliveredToClient) {
+        return {
+            background: "bg-gray-50",
+            border: "border-gray-200",
+            text: "text-gray-900",
+            accentBorder: "bg-gray-400",
+            hover: "hover:bg-gray-100 hover:border-gray-300",
         };
     }
 

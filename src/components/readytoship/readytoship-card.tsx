@@ -18,10 +18,9 @@ interface iProps {
     order: Order
     form: UseFormReturn<z.infer<typeof formSchema>>
     onSubmit: (values: z.infer<typeof formSchema>, order_code: number, totalValue: number) => void
-    showSensitiveData?: boolean
 }
 
-export const ReadyToShipCard = ({ order, form, onSubmit, showSensitiveData = true }: iProps) => {
+export const ReadyToShipCard = ({ order, form, onSubmit }: iProps) => {
     const totalValue = form.watch("sale_price") * order.amount
 
     return (
@@ -89,7 +88,7 @@ export const ReadyToShipCard = ({ order, form, onSubmit, showSensitiveData = tru
                                         <div className="p-4 bg-purple-50/50 border border-purple-100 rounded-lg">
                                             <Label className="text-sm font-semibold text-purple-700 mb-2 block">Preço de Custo</Label>
                                             <p className="text-lg font-bold text-purple-800">
-                                                {showSensitiveData ? formatCurrency(order.cost_price) : "••••••"}
+                                                {formatCurrency(order.cost_price)}
                                             </p>
                                         </div>
                                     </div>
@@ -162,7 +161,7 @@ export const ReadyToShipCard = ({ order, form, onSubmit, showSensitiveData = tru
                                                         type="number"
                                                         step="0.01"
                                                         disabled
-                                                        value={showSensitiveData ? totalValue : "••••••"}
+                                                        value={totalValue}
                                                         className="bg-white border-gray-200 focus:border-green-500 focus:ring-green-500/20"
                                                     />
                                                 </div>

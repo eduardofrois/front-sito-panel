@@ -35,4 +35,13 @@ export const CARD_STATES = {
         accentBorder: "bg-emerald-500",
         hover: "hover:shadow-md hover:border-emerald-300 dark:hover:border-emerald-700",
     },
+    DELIVERED: {
+        background: "bg-gray-50 dark:bg-gray-900",
+        border: "border-gray-200 dark:border-gray-800",
+        text: "text-gray-900 dark:text-gray-100",
+        label: "text-gray-600 dark:text-gray-400",
+        icon: "text-gray-600 dark:text-gray-400",
+        accentBorder: "bg-gray-500",
+        hover: "hover:shadow-md hover:border-gray-300 dark:hover:border-gray-700",
+    },
 }
