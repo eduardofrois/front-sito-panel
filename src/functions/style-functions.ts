@@ -8,15 +8,15 @@ export const getStatusColor = (status: string | null | undefined): string => {
 
     const statusColors: Record<string, string> = {
         [Status_String.PendingPurchase]: "bg-yellow-100 text-yellow-800 border-yellow-200",
-        [Status_String.SaleToRecive]: "bg-blue-100 text-blue-800 border-blue-200",
+        [Status_String.SaleToRecive]: "bg-cyan-100 text-cyan-800 border-cyan-200",
         [Status_String.ReadyForDelivery]: "bg-purple-100 text-purple-800 border-purple-200",
         [Status_String.ConfirmSale]: "bg-blue-100 text-blue-800 border-blue-200",
-        [Status_String.PaidPurchase]: "bg-green-100 text-green-800 border-green-200",
+        [Status_String.PaidPurchase]: "bg-pink-100 text-pink-800 border-pink-200",
         [Status_String.ToCheck]: "bg-orange-100 text-orange-800 border-orange-200",
-        [Status_String.Checked]: "bg-emerald-100 text-emerald-800 border-emerald-200",
+        [Status_String.Checked]: "bg-lime-100 text-lime-800 border-lime-200",
         [Status_String.PartialPayment]: "bg-amber-100 text-amber-800 border-amber-200",
         [Status_String.FullyPaid]: "bg-teal-100 text-teal-800 border-teal-200",
-        [Status_String.DeliveredToClient]: "bg-gray-100 text-gray-800 border-gray-200",
+        [Status_String.DeliveredToClient]: "bg-indigo-100 text-indigo-800 border-indigo-200",
     };
 
     return statusColors[status] || "bg-gray-100 text-gray-800 border-gray-200";
@@ -109,20 +109,20 @@ export const getOrderCardStyles = (
         // Se já foi conferido - Verde esmeralda
         if (status_conference === Status_String.Checked) {
             return {
-                background: "bg-emerald-50",
-                border: "border-emerald-200",
-                text: "text-emerald-900",
-                accentBorder: "bg-emerald-400",
-                hover: "hover:bg-emerald-100 hover:border-emerald-300",
+                background: "bg-lime-50",
+                border: "border-lime-200",
+                text: "text-lime-900",
+                accentBorder: "bg-lime-400",
+                hover: "hover:bg-lime-100 hover:border-lime-300",
             };
         }
         // Quitado mas sem conferência definida ainda - Verde padrão
         return {
-            background: "bg-green-50",
-            border: "border-green-200",
-            text: "text-green-900",
-            accentBorder: "bg-green-400",
-            hover: "hover:bg-green-100 hover:border-green-300",
+            background: "bg-pink-50",
+            border: "border-pink-200",
+            text: "text-pink-900",
+            accentBorder: "bg-pink-400",
+            hover: "hover:bg-pink-100 hover:border-pink-300",
         };
     }
 
@@ -151,11 +151,11 @@ export const getOrderCardStyles = (
     // Entregue ao Cliente - Cinza (finalizado/arquivado)
     if (status === Status_String.DeliveredToClient) {
         return {
-            background: "bg-gray-50",
-            border: "border-gray-200",
-            text: "text-gray-900",
-            accentBorder: "bg-gray-400",
-            hover: "hover:bg-gray-100 hover:border-gray-300",
+            background: "bg-indigo-50",
+            border: "border-indigo-200",
+            text: "text-indigo-900",
+            accentBorder: "bg-indigo-400",
+            hover: "hover:bg-indigo-100 hover:border-indigo-300",
         };
     }
 

@@ -115,10 +115,10 @@ export const ShoppingView = ({
               description="Produto recebido"
             />
             <StatusLegendItem
-              bgColor="bg-green-50"
-              borderColor="border-green-200"
-              textColor="text-green-900"
-              accentColor="bg-green-400"
+              bgColor="bg-pink-50"
+              borderColor="border-pink-200"
+              textColor="text-pink-900"
+              accentColor="bg-pink-400"
               status="Compra Quitada"
               description="Pagamento efetuado"
             />
@@ -131,10 +131,10 @@ export const ShoppingView = ({
               description="Aguardando conferência"
             />
             <StatusLegendItem
-              bgColor="bg-emerald-50"
-              borderColor="border-emerald-200"
-              textColor="text-emerald-900"
-              accentColor="bg-emerald-400"
+              bgColor="bg-lime-50"
+              borderColor="border-lime-200"
+              textColor="text-lime-900"
+              accentColor="bg-lime-400"
               status="Conferido"
               description="Pedido conferido"
             />
@@ -145,6 +145,14 @@ export const ShoppingView = ({
               accentColor="bg-purple-400"
               status="Pronta a Entrega"
               description="Em estoque"
+            />
+            <StatusLegendItem
+              bgColor="bg-indigo-50"
+              borderColor="border-indigo-200"
+              textColor="text-indigo-900"
+              accentColor="bg-indigo-400"
+              status="Entregue ao Cliente"
+              description="Finalizado"
             />
           </div>
         </div>
