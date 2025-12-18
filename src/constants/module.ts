@@ -10,7 +10,7 @@ import {
 export const modules = [
     {
         id: 1,
-        title: "Pedidos",
+        title: "Vendas",
         description: "Visualize e gerencie os pedidos realizados na plataforma.",
         icon: ShoppingCart,
         color: "bg-purple-100",
@@ -18,7 +18,7 @@ export const modules = [
     },
     {
         id: 2,
-        title: "Contas",
+        title: "Conciliação",
         description: "Acesse informações financeiras, cobranças e pagamentos.",
         icon: CreditCard,
         color: "bg-purple-100",
