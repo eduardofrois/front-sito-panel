@@ -1,33 +1,31 @@
 "use client"
 
-import { ShoppingView } from "../../../components/order/shopping.view"
+import { OrdersPageView } from "@/components/order/orders-page-view"
 import type { useOrdersModel } from "./orders.model"
 
 type OrdersViewProps = ReturnType<typeof useOrdersModel>
 
 export const OrdersView = (props: OrdersViewProps) => {
   const {
-    data,
+    orders,
+    clients,
+    suppliers,
     isLoading,
-    confirmedOrder,
-    setConfirmedOrder,
-    onUpdate,
-    isLoadingSolicitations, solicitations,
-    pagination, setPagination
+    pagination,
+    handlePageChange,
+    handleFiltersChange,
   } = props
 
   return (
     <div>
-      <ShoppingView
-        data={data?.data || data || []}
-        solicitations={solicitations}
+      <OrdersPageView
+        orders={orders}
+        clients={clients}
+        suppliers={suppliers}
         isLoading={isLoading}
-        isLoadingSolicitations={isLoadingSolicitations}
-        confirmedOrder={confirmedOrder}
-        setConfirmedOrder={setConfirmedOrder}
-        onUpdate={onUpdate}
         pagination={pagination}
-        setPagination={setPagination}
+        onPageChange={handlePageChange}
+        onFiltersChange={handleFiltersChange}
       />
     </div>
   )

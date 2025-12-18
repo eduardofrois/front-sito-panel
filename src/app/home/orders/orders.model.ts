@@ -1,95 +1,63 @@
 "use client"
 
-import { zodResolver } from "@hookform/resolvers/zod"
-import { useQueryClient } from "@tanstack/react-query"
-import { useEffect, useState } from "react"
-import { useForm } from "react-hook-form"
-import type z from "zod"
-import useMutationAddOrderAndSolicitation from "./hooks/mutates/useMutateAddOrderAndSolicitation"
-import useMutationCreateOrder from "./hooks/mutates/useMutateCreateOrder"
-import useMutationUpdateStatusOrder from "./hooks/mutates/useMutateUpdateStatusOrder"
-import useQueryGetAllOrders from "./hooks/useQueryGetAllOrders"
-import useQueryGetAllSolicitations from "./hooks/useQueryGetAllSolicitations"
-import { type CreateOrderSchema, orderSchema } from "./order.interface"
+import { Status } from "@/constants/order-status"
+import { useState } from "react"
+import useQueryGetAllClients from "./hooks/useQueryGetAllClients"
+import useQueryGetAllSuppliers from "./hooks/useQueryGetAllSuppliers"
+import useQueryGetOrdersWithFilters, { type OrderFilters } from "./hooks/useQueryGetOrdersWithFilters"
+
+// Status padrão para o módulo de vendas: Compra Pendente, Pronta Entrega, Compra Realizada
+const DEFAULT_SALES_STATUSES = [Status.PendingPurchase, Status.ReadyForDelivery, Status.ConfirmSale]
 
 export const useOrdersModel = () => {
   const [pagination, setPagination] = useState({
     pageIndex: 1,
-    pageSize: 10,
-  });
-  const { data, isLoading } = useQueryGetAllOrders({ pageNumber: pagination.pageIndex, pageSize: pagination.pageSize })
-  const { data: solicitations, isLoading: isLoadingSolicitations, refetch: refetchSolicitation } = useQueryGetAllSolicitations({ pageNumber: pagination.pageIndex, pageSize: pagination.pageSize });
-  const { mutateAsync, isPending } = useMutationCreateOrder()
-  const { mutateAsync: updateStautsOrderAync, isPending: isPendingUpdateStatusOrder } = useMutationUpdateStatusOrder()
-  const { mutateAsync: addOrderAndSolicitation, isPending: isPendingAddOrderAndSolicitation } = useMutationAddOrderAndSolicitation();
-
-  const [valuesForm, setValuesForm] = useState<CreateOrderSchema[]>([])
-  const [confirmedOrder, setConfirmedOrder] = useState<number[]>([])
-
-  const queryClient = useQueryClient()
-
-  const form = useForm<z.infer<typeof orderSchema>>({
-    resolver: zodResolver(orderSchema),
-    defaultValues: {
-      client: "",
-      brand: "",
-      code: "",
-      description: "",
-      size: "",
-      amount: 0,
-      cost_price: 0,
-      sale_price: 0,
-      total_price: 0,
-    },
+    pageSize: 20,
   })
 
-  async function onSubmit() {
-    await mutateAsync(valuesForm)
-    form.reset()
-    setValuesForm([])
-    queryClient.invalidateQueries({
-      queryKey: ["getAllOrders"],
-      exact: true,
-    })
+  const [filters, setFilters] = useState<OrderFilters>({
+    statuses: DEFAULT_SALES_STATUSES  // Filtro padrão
+  })
+
+  // Fetch orders with filters
+  const { data: ordersData, isLoading: isLoadingOrders } = useQueryGetOrdersWithFilters({
+    ...filters,
+    statuses: filters.statuses ?? DEFAULT_SALES_STATUSES, // Garante que sempre tenha os status padrão
+    pageNumber: pagination.pageIndex,
+    pageSize: pagination.pageSize,
+  })
+
+  // Fetch clients and suppliers for filters
+  const { data: clients = [], isLoading: isLoadingClients } = useQueryGetAllClients()
+  const { data: suppliers = [], isLoading: isLoadingSuppliers } = useQueryGetAllSuppliers()
+
+  const handlePageChange = (page: number) => {
+    setPagination(prev => ({ ...prev, pageIndex: page }))
   }
 
-  async function onUpdate(orders: number[], value: number): Promise<void> {
-    await updateStautsOrderAync({ orders: orders, value: value })
-    setConfirmedOrder([])
-    queryClient.invalidateQueries({
-      queryKey: ["getAllSolicitations"],
-      exact: false,
-    })
+  const handleFiltersChange = (newFilters: {
+    dateStart?: string
+    dateEnd?: string
+    statuses?: number[]
+    clientId?: number
+    supplierId?: number
+  }) => {
+    setFilters(newFilters)
+    setPagination(prev => ({ ...prev, pageIndex: 1 })) // Reset to first page on filter change
   }
-
-  function addToList() {
-    const data = form.getValues()
-    setValuesForm((prev) => [...prev, data])
-    form.reset()
-  }
-
-  form.setValue("total_price", (form.watch("sale_price") ?? 0) * (form.watch("amount") ?? 1))
-
-  useEffect(() => {
-    refetchSolicitation()
-  }, [setPagination])
 
   return {
-    form,
-    onSubmit,
-    mutateAsync,
-    isPending,
-    valuesForm,
-    setValuesForm,
-    addToList,
-    data,
-    isLoading,
-    confirmedOrder,
-    setConfirmedOrder,
-    isPendingUpdateStatusOrder,
-    onUpdate,
-    solicitations, isLoadingSolicitations,
-    addOrderAndSolicitation, isPendingAddOrderAndSolicitation,
-    pagination, setPagination
+    orders: ordersData?.data || [],
+    clients,
+    suppliers,
+    isLoading: isLoadingOrders || isLoadingClients || isLoadingSuppliers,
+    pagination: {
+      pageIndex: pagination.pageIndex,
+      pageSize: pagination.pageSize,
+      totalPages: ordersData?.totalPages || 0,
+      totalCount: ordersData?.totalCount || 0,
+    },
+    handlePageChange,
+    handleFiltersChange,
   }
 }

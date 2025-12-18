@@ -30,7 +30,11 @@ export interface Order {
   client_infos: {
     client_id: number
     client_name: string
-  }
+  } | null
+  supplier_infos: {
+    supplier_id: number
+    supplier_name: string
+  } | null
   status_conference: string
   date_conference: string | null
   paid_price: number
@@ -38,6 +42,7 @@ export interface Order {
 
 export type CreateOrderSchema = {
   client: string;
+  supplier: string;
   code: string;
   description: string;
   size: string;
@@ -53,4 +58,14 @@ export interface Solicitation {
   status: string;
   date_solicitation: string;
   orderJoin: Order[];
+}
+
+export interface Supplier {
+  id: number;
+  name: string;
+}
+
+export interface Client {
+  id: number;
+  name: string;
 }

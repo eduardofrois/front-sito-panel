@@ -27,7 +27,7 @@ const OrdersLayout = ({ children }: OrdersLayoutProps) => {
                                 </div>
                                 <div>
                                     <h1 className="text-xl font-semibold text-gray-900">Gerência de pedidos</h1>
-                                    <p className="text-sm text-gray-500">Gerencie seus pedidos</p>
+                                    <p className="text-sm text-gray-500">Gerencie suas vendas</p>
                                 </div>
                             </div>
                         </div>
