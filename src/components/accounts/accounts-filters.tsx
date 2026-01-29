@@ -12,11 +12,11 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select"
-import { Status_String } from "@/constants/order-status"
+import { Status, Status_String } from "@/constants/order-status"
 import { Calendar, Search, X } from "lucide-react"
 import { useState } from "react"
 
-interface OrdersFiltersProps {
+interface AccountsFiltersProps {
     clients: Client[]
     suppliers: Supplier[]
     onFiltersChange: (filters: {
@@ -29,19 +29,18 @@ interface OrdersFiltersProps {
     isLoading?: boolean
 }
 
-// Status disponíveis no módulo de vendas
+// Status disponíveis no módulo de contas a pagar
 const STATUS_OPTIONS = [
-    { value: 1, label: Status_String.PendingPurchase },
-    { value: 3, label: Status_String.ReadyForDelivery },
-    { value: 4, label: Status_String.ConfirmSale },
+    { value: Status.PendingPurchase, label: Status_String.PendingPurchase },
+    { value: Status.ConfirmSale, label: Status_String.ConfirmSale },
 ]
 
-export function OrdersFilters({
+export function AccountsFilters({
     clients,
     suppliers,
     onFiltersChange,
     isLoading = false
-}: OrdersFiltersProps) {
+}: AccountsFiltersProps) {
     const [dateStart, setDateStart] = useState("")
     const [dateEnd, setDateEnd] = useState("")
     const [selectedStatus, setSelectedStatus] = useState<string>("all")
@@ -75,7 +74,7 @@ export function OrdersFilters({
         onFiltersChange({})
     }
 
-    const hasActiveFilters = !!(dateStart || dateEnd || (selectedStatus && selectedStatus !== "all") || (selectedClient && selectedClient !== "all") || (selectedSupplier && selectedSupplier !== "all"))
+    const hasActiveFilters = dateStart || dateEnd || (selectedStatus && selectedStatus !== "all") || (selectedClient && selectedClient !== "all") || (selectedSupplier && selectedSupplier !== "all")
 
     return (
         <ExpandableFilterCard

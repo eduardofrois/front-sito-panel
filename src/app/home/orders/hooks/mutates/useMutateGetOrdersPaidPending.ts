@@ -1,15 +1,29 @@
-import { ToastMessages } from "@/constants/toast-message";
 import api from "@/services/api";
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
 
-interface PaginationInterface {
+interface PaginationWithFiltersInterface {
     pageNumber: number;
     pageSize: number;
+    dateStart?: string;
+    dateEnd?: string;
+    clientId?: number;
+    supplierId?: number;
 }
 
-async function getPendingPaid(pageNumber: number, pageSize: number) {
-    const response = await api.get(`/orders/pending?pageNumber=${pageNumber}&pageSize=${pageSize}`);
+async function getPendingPaid(params: PaginationWithFiltersInterface) {
+    const { pageNumber, pageSize, dateStart, dateEnd, clientId, supplierId } = params;
+
+    const queryParams = new URLSearchParams();
+    queryParams.append('pageNumber', pageNumber.toString());
+    queryParams.append('pageSize', pageSize.toString());
+
+    if (dateStart) queryParams.append('dateStart', dateStart);
+    if (dateEnd) queryParams.append('dateEnd', dateEnd);
+    if (clientId) queryParams.append('clientId', clientId.toString());
+    if (supplierId) queryParams.append('supplierId', supplierId.toString());
+
+    const response = await api.get(`/orders/pending?${queryParams.toString()}`);
 
     if (!response.data.flag) {
         toast.error(response.data.message)
@@ -31,9 +45,9 @@ async function getPendingPaid(pageNumber: number, pageSize: number) {
     }
 }
 
-export default function useQueryGetPendingPaid({ pageNumber, pageSize }: PaginationInterface) {
-     return useQuery({
-            queryKey: ["getPendingPaidOrders", pageNumber, pageSize],
-            queryFn: () => getPendingPaid(pageNumber, pageSize)
-        })
+export default function useQueryGetPendingPaid(params: PaginationWithFiltersInterface) {
+    return useQuery({
+        queryKey: ["getPendingPaidOrders", params.pageNumber, params.pageSize, params.dateStart, params.dateEnd, params.clientId, params.supplierId],
+        queryFn: () => getPendingPaid(params)
+    })
 }

@@ -1,110 +1,241 @@
 import { Status } from "@/constants/order-status"
 import { useQueryClient } from "@tanstack/react-query"
-import { useState } from "react"
+import { useCallback, useState } from "react"
 import useQueryGetPendingPaid from "../orders/hooks/mutates/useMutateGetOrdersPaidPending"
 import useMutationUpdateStatusOrder from "../orders/hooks/mutates/useMutateUpdateStatusOrder"
-import useQueryGetAllSolicitations from "../orders/hooks/useQueryGetAllSolicitations"
-import useQueryGetOrdersByStatus from "../orders/hooks/useQueryGetOrdersByStatus"
-import { Order } from "../orders/order.interface"
-import useQueryGetClients from "./hooks/useQueryGetClients"
+import useQueryGetAllClients from "../orders/hooks/useQueryGetAllClients"
+import useQueryGetAllSuppliers from "../orders/hooks/useQueryGetAllSuppliers"
+import useQueryGetOrdersWithFilters, { type OrderFilters } from "../orders/hooks/useQueryGetOrdersWithFilters"
 
 export const useAccountsModel = () => {
-    const [pagination, setPagination] = useState({
+    // Pagination state for "Contas a Pagar" tab
+    const [paginationPay, setPaginationPay] = useState({
         pageIndex: 1,
         pageSize: 10,
     });
-    const [paginationPending, setPaginationPending] = useState({
+
+    // Pagination state for "Contas a Receber" tab  
+    const [paginationReceive, setPaginationReceive] = useState({
         pageIndex: 1,
         pageSize: 10,
     });
-    const [paginationAccounts, setPaginationAccounts] = useState({
+
+    // Pagination state for "Pronta Entrega - Recebimento" tab
+    const [paginationRecebimento, setPaginationRecebimento] = useState({
         pageIndex: 1,
         pageSize: 10,
     });
-    const [confirmedOrder, setConfirmedOrder] = useState<number[]>([])
 
-    const { data: clients, isLoading: isLoadingClients } = useQueryGetClients()
-    const { data: ordersPending, isLoading: isLoadingPending } = useQueryGetPendingPaid({
-        pageNumber: paginationPending.pageIndex,
-        pageSize: paginationPending.pageSize
-    })
-    const { mutateAsync, isPending: isUpdatingStatus } = useMutationUpdateStatusOrder();
-
-    // Query para buscar orders por status (usado no tab "contas a pagar")
-    const { data: ordersByStatus, isLoading: isLoadingOrdersByStatus } = useQueryGetOrdersByStatus(Status.MoreThenOne, { 
-        pageNumber: paginationAccounts.pageIndex, 
-        pageSize: paginationAccounts.pageSize 
+    // Pagination state for "Pronta Entrega - Entregas" tab
+    const [paginationEntregas, setPaginationEntregas] = useState({
+        pageIndex: 1,
+        pageSize: 10,
     });
 
-    const { data: solicitations, isLoading: isLoadingSolicitations, refetch: refetchSolicitation } = useQueryGetAllSolicitations({ pageNumber: pagination.pageIndex, pageSize: pagination.pageSize });
+    // Filters state for "Contas a Pagar" tab
+    const [filtersPay, setFiltersPay] = useState<OrderFilters>({
+        statuses: [Status.PendingPurchase, Status.ConfirmSale], // Default: Compra Pendente and Compra Realizada
+    });
 
+    // Filters state for "Contas a Receber" tab
+    const [filtersReceive, setFiltersReceive] = useState<{
+        dateStart?: string
+        dateEnd?: string
+        clientId?: number
+        supplierId?: number
+    }>({});
 
-    const [selectedOrders, setSelectedOrders] = useState<number[]>([])
-    const [firstSelectedOrder, setFirstSelectedOrder] = useState<Order | null>(null)
+    // Filters state for "Pronta Entrega - Recebimento" tab
+    const [filtersRecebimento, setFiltersRecebimento] = useState<OrderFilters>({
+        statuses: [Status.ConfirmSale], // Only ConfirmSale (COMPRA REALIZADA)
+    });
 
+    // Filters state for "Pronta Entrega - Entregas" tab
+    const [filtersEntregas, setFiltersEntregas] = useState<OrderFilters>({
+        statuses: [Status.ReadyForDelivery, Status.DeliveredToClient], // Only PRONTA ENTREGA and ENTREGUE
+    });
+
+    // Fetch clients and suppliers
+    const { data: clients = [], isLoading: isLoadingClients } = useQueryGetAllClients()
+    const { data: suppliers = [], isLoading: isLoadingSuppliers } = useQueryGetAllSuppliers()
+
+    // Fetch orders for "Contas a Pagar" with filters
+    const { data: ordersPayData, isLoading: isLoadingOrdersPay, refetch: refetchOrdersPay } = useQueryGetOrdersWithFilters({
+        ...filtersPay,
+        pageNumber: paginationPay.pageIndex,
+        pageSize: paginationPay.pageSize,
+    });
+
+    // Fetch orders for "Contas a Receber" (pending payment)
+    const { data: ordersReceive, isLoading: isLoadingReceive } = useQueryGetPendingPaid({
+        pageNumber: paginationReceive.pageIndex,
+        pageSize: paginationReceive.pageSize,
+        ...filtersReceive,
+    });
+
+    // Fetch orders for "Pronta Entrega - Recebimento" (ConfirmSale status only)
+    const { data: ordersRecebimentoData, isLoading: isLoadingRecebimento, refetch: refetchRecebimento } = useQueryGetOrdersWithFilters({
+        ...filtersRecebimento,
+        pageNumber: paginationRecebimento.pageIndex,
+        pageSize: paginationRecebimento.pageSize,
+    });
+
+    // Fetch orders for "Pronta Entrega - Entregas" (Checked, ReadyForDelivery, DeliveredToClient)
+    const { data: ordersEntregasData, isLoading: isLoadingEntregas, refetch: refetchEntregas } = useQueryGetOrdersWithFilters({
+        ...filtersEntregas,
+        pageNumber: paginationEntregas.pageIndex,
+        pageSize: paginationEntregas.pageSize,
+    });
+
+    // Status update mutation
+    const { mutateAsync: updateStatus, isPending: isUpdatingStatus } = useMutationUpdateStatusOrder();
     const queryClient = useQueryClient();
 
-    function totalValueToPay(codes: number[], data: Order[]) {
-        return data
-            .filter(order => codes.includes(order.id))
-            .reduce((total, order) => total + (order.cost_price ?? 0), 0);
-    }
+    // Handle filter changes for "Contas a Pagar"
+    const handleFiltersChange = useCallback((newFilters: {
+        dateStart?: string
+        dateEnd?: string
+        statuses?: number[]
+        clientId?: number
+        supplierId?: number
+    }) => {
+        const filters: OrderFilters = { ...newFilters };
 
-    async function onUpdate(orders: number[], value: number) {
-        await mutateAsync({ orders: orders, value: value })
-        setSelectedOrders([])
-        setConfirmedOrder([])
-        // Invalidar todas as queries relacionadas
-        await queryClient.invalidateQueries({
-            queryKey: ["getOrdersByStatus"],
-        })
-        await queryClient.invalidateQueries({
-            queryKey: ["getAllSolicitations"],
-        })
-        await queryClient.invalidateQueries({
-            queryKey: ["getPendingPaidOrders"],
-        })
-        await refetchSolicitation()
-    }
+        // If no status filter is provided, use default statuses
+        if (!filters.statuses || filters.statuses.length === 0) {
+            filters.statuses = [Status.PendingPurchase, Status.ConfirmSale];
+        }
 
+        setFiltersPay(filters);
+        // Reset to first page when filters change
+        setPaginationPay(prev => ({ ...prev, pageIndex: 1 }));
+    }, []);
 
-    const handleCardClick = (isSelected: boolean, order: Order) => {
-        setFirstSelectedOrder(order)
-        setSelectedOrders((prev: number[]) => {
-            if (isSelected) {
-                return prev.filter((id) => id !== order.id)
-            }
+    // Handle status update
+    const handleUpdateStatus = useCallback(async (orderIds: number[], newStatus: number) => {
+        await updateStatus({ orders: orderIds, value: newStatus });
 
-            else {
-                if (prev.length === 0)
-                    return [...prev, order.id]
+        // Invalidate queries to refresh data
+        await queryClient.invalidateQueries({ queryKey: ["getOrdersWithFilters"] });
+        await queryClient.invalidateQueries({ queryKey: ["getPendingPaidOrders"] });
+        await refetchOrdersPay();
+        await refetchRecebimento();
+        await refetchEntregas();
+    }, [updateStatus, queryClient, refetchOrdersPay, refetchRecebimento, refetchEntregas]);
 
-                return prev
-            }
-        })
-    }
+    // Handle page change for "Contas a Pagar"
+    const handlePageChangePay = useCallback((page: number) => {
+        setPaginationPay(prev => ({ ...prev, pageIndex: page }));
+    }, []);
 
-    const canSelectCard = (order: Order): boolean => {
-        if (selectedOrders.length === 0) return true
+    // Handle page change for "Contas a Receber"
+    const handlePageChangeReceive = useCallback((page: number) => {
+        setPaginationReceive(prev => ({ ...prev, pageIndex: page }));
+    }, []);
 
-        return true;
-    }
+    // Handle page change for "Pronta Entrega - Recebimento"
+    const handlePageChangeRecebimento = useCallback((page: number) => {
+        setPaginationRecebimento(prev => ({ ...prev, pageIndex: page }));
+    }, []);
+
+    // Handle page change for "Pronta Entrega - Entregas"
+    const handlePageChangeEntregas = useCallback((page: number) => {
+        setPaginationEntregas(prev => ({ ...prev, pageIndex: page }));
+    }, []);
+
+    // Handle filter changes for "Contas a Receber"
+    const handleFiltersChangeReceive = useCallback((newFilters: {
+        dateStart?: string
+        dateEnd?: string
+        clientId?: number
+        supplierId?: number
+    }) => {
+        setFiltersReceive(newFilters);
+        // Reset to first page when filters change
+        setPaginationReceive(prev => ({ ...prev, pageIndex: 1 }));
+    }, []);
+
+    // Handle filter changes for "Pronta Entrega - Recebimento"
+    const handleFiltersChangeRecebimento = useCallback((newFilters: {
+        clientId?: number
+        supplierId?: number
+    }) => {
+        setFiltersRecebimento({
+            ...newFilters,
+            statuses: [Status.ConfirmSale], // Always filter by ConfirmSale
+        });
+        // Reset to first page when filters change
+        setPaginationRecebimento(prev => ({ ...prev, pageIndex: 1 }));
+    }, []);
+
+    // Handle filter changes for "Pronta Entrega - Entregas"
+    const handleFiltersChangeEntregas = useCallback((newFilters: {
+        clientId?: number
+        supplierId?: number
+    }) => {
+        setFiltersEntregas({
+            ...newFilters,
+            statuses: [Status.ReadyForDelivery, Status.DeliveredToClient], // Only PRONTA ENTREGA and ENTREGUE
+        });
+        // Reset to first page when filters change
+        setPaginationEntregas(prev => ({ ...prev, pageIndex: 1 }));
+    }, []);
 
     return {
-        setSelectedOrders, selectedOrders,
-        totalValueToPay,
-        onUpdate,
-        handleCardClick,
-        canSelectCard,
-        firstSelectedOrder,
-        clients, isLoadingClients,
-        ordersPending, isLoadingPending,
-        solicitations, isLoadingSolicitations, refetchSolicitation,
-        confirmedOrder, setConfirmedOrder,
+        // Data for "Contas a Pagar"
+        ordersPay: ordersPayData?.data || [],
+        isLoadingOrdersPay,
+        paginationPay: {
+            pageIndex: paginationPay.pageIndex,
+            pageSize: paginationPay.pageSize,
+            totalPages: ordersPayData?.totalPages,
+            totalCount: ordersPayData?.totalCount,
+        },
+        handlePageChangePay,
+        handleFiltersChange,
+        handleUpdateStatus,
         isUpdatingStatus,
-        paginationPending, setPaginationPending,
-        pagination, setPagination,
-        ordersByStatus, isLoadingOrdersByStatus,
-        paginationAccounts, setPaginationAccounts
+
+        // Data for "Contas a Receber"
+        ordersReceive: Array.isArray(ordersReceive) ? ordersReceive : (ordersReceive?.data || []),
+        isLoadingReceive,
+        paginationReceive: {
+            pageIndex: paginationReceive.pageIndex,
+            pageSize: paginationReceive.pageSize,
+            totalPages: Array.isArray(ordersReceive) ? undefined : ordersReceive?.totalPages,
+        },
+        setPaginationReceive,
+        handlePageChangeReceive,
+        handleFiltersChangeReceive,
+
+        // Data for "Pronta Entrega - Recebimento"
+        ordersRecebimento: ordersRecebimentoData?.data || [],
+        isLoadingRecebimento,
+        paginationRecebimento: {
+            pageIndex: paginationRecebimento.pageIndex,
+            pageSize: paginationRecebimento.pageSize,
+            totalPages: ordersRecebimentoData?.totalPages,
+            totalCount: ordersRecebimentoData?.totalCount,
+        },
+        handlePageChangeRecebimento,
+        handleFiltersChangeRecebimento,
+
+        // Data for "Pronta Entrega - Entregas"
+        ordersEntregas: ordersEntregasData?.data || [],
+        isLoadingEntregas,
+        paginationEntregas: {
+            pageIndex: paginationEntregas.pageIndex,
+            pageSize: paginationEntregas.pageSize,
+            totalPages: ordersEntregasData?.totalPages,
+            totalCount: ordersEntregasData?.totalCount,
+        },
+        handlePageChangeEntregas,
+        handleFiltersChangeEntregas,
+
+        // Common data
+        clients,
+        suppliers,
+        isLoadingClients,
+        isLoadingSuppliers,
     }
 }

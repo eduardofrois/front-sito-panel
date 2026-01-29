@@ -12,39 +12,29 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select"
-import { Status_String } from "@/constants/order-status"
 import { Calendar, Search, X } from "lucide-react"
 import { useState } from "react"
 
-interface OrdersFiltersProps {
+interface AccountsReceiveFiltersProps {
     clients: Client[]
     suppliers: Supplier[]
     onFiltersChange: (filters: {
         dateStart?: string
         dateEnd?: string
-        statuses?: number[]
         clientId?: number
         supplierId?: number
     }) => void
     isLoading?: boolean
 }
 
-// Status disponíveis no módulo de vendas
-const STATUS_OPTIONS = [
-    { value: 1, label: Status_String.PendingPurchase },
-    { value: 3, label: Status_String.ReadyForDelivery },
-    { value: 4, label: Status_String.ConfirmSale },
-]
-
-export function OrdersFilters({
+export function AccountsReceiveFilters({
     clients,
     suppliers,
     onFiltersChange,
     isLoading = false
-}: OrdersFiltersProps) {
+}: AccountsReceiveFiltersProps) {
     const [dateStart, setDateStart] = useState("")
     const [dateEnd, setDateEnd] = useState("")
-    const [selectedStatus, setSelectedStatus] = useState<string>("all")
     const [selectedClient, setSelectedClient] = useState<string>("all")
     const [selectedSupplier, setSelectedSupplier] = useState<string>("all")
 
@@ -52,14 +42,12 @@ export function OrdersFilters({
         const filters: {
             dateStart?: string
             dateEnd?: string
-            statuses?: number[]
             clientId?: number
             supplierId?: number
         } = {}
 
         if (dateStart) filters.dateStart = dateStart
         if (dateEnd) filters.dateEnd = dateEnd
-        if (selectedStatus && selectedStatus !== "all") filters.statuses = [parseInt(selectedStatus)]
         if (selectedClient && selectedClient !== "all") filters.clientId = parseInt(selectedClient)
         if (selectedSupplier && selectedSupplier !== "all") filters.supplierId = parseInt(selectedSupplier)
 
@@ -69,34 +57,33 @@ export function OrdersFilters({
     const handleClearFilters = () => {
         setDateStart("")
         setDateEnd("")
-        setSelectedStatus("all")
         setSelectedClient("all")
         setSelectedSupplier("all")
         onFiltersChange({})
     }
 
-    const hasActiveFilters = !!(dateStart || dateEnd || (selectedStatus && selectedStatus !== "all") || (selectedClient && selectedClient !== "all") || (selectedSupplier && selectedSupplier !== "all"))
+    const hasActiveFilters = !!(dateStart || dateEnd || (selectedClient && selectedClient !== "all") || (selectedSupplier && selectedSupplier !== "all"))
 
     return (
         <ExpandableFilterCard
             hasActiveFilters={hasActiveFilters}
-            colorScheme="purple"
+            colorScheme="green"
         >
             {/* Filters Grid */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 w-full">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 w-full">
                 {/* Date Start */}
                 <div className="space-y-2 w-full">
-                    <Label htmlFor="dateStart" className="text-sm font-semibold text-gray-700">
+                    <Label htmlFor="dateStartReceive" className="text-sm font-semibold text-gray-700">
                         Data Inicial
                     </Label>
                     <div className="relative">
-                        <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-purple-400" />
+                        <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-green-400" />
                         <Input
-                            id="dateStart"
+                            id="dateStartReceive"
                             type="date"
                             value={dateStart}
                             onChange={(e) => setDateStart(e.target.value)}
-                            className="pl-10 h-11 bg-white border-gray-200 focus:border-purple-400 focus:ring-purple-400 rounded-lg w-full"
+                            className="pl-10 h-11 bg-white border-gray-200 focus:border-green-400 focus:ring-green-400 rounded-lg w-full"
                             disabled={isLoading}
                         />
                     </div>
@@ -104,42 +91,20 @@ export function OrdersFilters({
 
                 {/* Date End */}
                 <div className="space-y-2 w-full">
-                    <Label htmlFor="dateEnd" className="text-sm font-semibold text-gray-700">
+                    <Label htmlFor="dateEndReceive" className="text-sm font-semibold text-gray-700">
                         Data Final
                     </Label>
                     <div className="relative">
-                        <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-purple-400" />
+                        <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-green-400" />
                         <Input
-                            id="dateEnd"
+                            id="dateEndReceive"
                             type="date"
                             value={dateEnd}
                             onChange={(e) => setDateEnd(e.target.value)}
-                            className="pl-10 h-11 bg-white border-gray-200 focus:border-purple-400 focus:ring-purple-400 rounded-lg w-full"
+                            className="pl-10 h-11 bg-white border-gray-200 focus:border-green-400 focus:ring-green-400 rounded-lg w-full"
                             disabled={isLoading}
                         />
                     </div>
-                </div>
-
-                {/* Status */}
-                <div className="space-y-2 w-full">
-                    <Label className="text-sm font-semibold text-gray-700">Status</Label>
-                    <Select
-                        value={selectedStatus}
-                        onValueChange={setSelectedStatus}
-                        disabled={isLoading}
-                    >
-                        <SelectTrigger className="h-11 bg-white border-gray-200 focus:border-purple-400 focus:ring-purple-400 rounded-lg w-full">
-                            <SelectValue placeholder="Todos os status" />
-                        </SelectTrigger>
-                        <SelectContent>
-                            <SelectItem value="all">Todos os status</SelectItem>
-                            {STATUS_OPTIONS.map((status) => (
-                                <SelectItem key={status.value} value={status.value.toString()}>
-                                    {status.label}
-                                </SelectItem>
-                            ))}
-                        </SelectContent>
-                    </Select>
                 </div>
 
                 {/* Client */}
@@ -150,7 +115,7 @@ export function OrdersFilters({
                         onValueChange={setSelectedClient}
                         disabled={isLoading}
                     >
-                        <SelectTrigger className="h-11 bg-white border-gray-200 focus:border-purple-400 focus:ring-purple-400 rounded-lg w-full">
+                        <SelectTrigger className="h-11 bg-white border-gray-200 focus:border-green-400 focus:ring-green-400 rounded-lg w-full">
                             <SelectValue placeholder="Todos os clientes" />
                         </SelectTrigger>
                         <SelectContent>
@@ -172,7 +137,7 @@ export function OrdersFilters({
                         onValueChange={setSelectedSupplier}
                         disabled={isLoading}
                     >
-                        <SelectTrigger className="h-11 bg-white border-gray-200 focus:border-purple-400 focus:ring-purple-400 rounded-lg w-full">
+                        <SelectTrigger className="h-11 bg-white border-gray-200 focus:border-green-400 focus:ring-green-400 rounded-lg w-full">
                             <SelectValue placeholder="Todos os fornecedores" />
                         </SelectTrigger>
                         <SelectContent>
@@ -188,12 +153,12 @@ export function OrdersFilters({
             </div>
 
             {/* Actions */}
-            <div className="flex flex-col sm:flex-row gap-3 mt-6 pt-6 border-t border-purple-100">
+            <div className="flex flex-col sm:flex-row gap-3 mt-6 pt-6 border-t border-green-100">
                 <Button
                     onClick={handleApplyFilters}
                     disabled={isLoading}
                     variant={"default"}
-                    className="w-full sm:w-auto"
+                    className="w-full sm:w-auto bg-green-600 hover:bg-green-700"
                 >
                     <Search className="w-4 h-4 mr-2" />
                     Aplicar Filtros

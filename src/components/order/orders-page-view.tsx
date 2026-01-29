@@ -4,7 +4,6 @@ import type { Client, Order, Supplier } from "@/app/home/orders/order.interface"
 import { IsLoadingCard } from "@/components/global/isloading-card"
 import { Button } from "@/components/ui/button"
 import { ChevronLeft, ChevronRight, Info } from "lucide-react"
-import { useState } from "react"
 import { DialogFormOrder } from "./dialog-form-order"
 import { OrdersFilters } from "./orders-filters"
 import { OrdersTable } from "./orders-table"
@@ -39,15 +38,7 @@ export const OrdersPageView = ({
     onPageChange,
     onFiltersChange,
 }: OrdersPageViewProps) => {
-    const [selectedOrders, setSelectedOrders] = useState<number[]>([])
 
-    const handleToggleSelect = (order: Order) => {
-        setSelectedOrders(prev =>
-            prev.includes(order.id)
-                ? prev.filter(id => id !== order.id)
-                : [...prev, order.id]
-        )
-    }
 
     if (isLoading && orders.length === 0) return <IsLoadingCard />
 
@@ -114,19 +105,8 @@ export const OrdersPageView = ({
 
             {/* Orders Table */}
             <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-4">
-                {selectedOrders.length > 0 && (
-                    <div className="mb-4 p-3 bg-purple-50 rounded-lg border border-purple-200">
-                        <p className="text-sm text-purple-700">
-                            <span className="font-semibold">{selectedOrders.length}</span> pedido(s) selecionado(s)
-                        </p>
-                    </div>
-                )}
-
                 <OrdersTable
                     orders={orders}
-                    selectedOrders={selectedOrders}
-                    onToggleSelect={handleToggleSelect}
-                    type="order"
                 />
 
                 {/* Pagination */}
