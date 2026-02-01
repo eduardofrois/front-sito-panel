@@ -2,6 +2,7 @@ import {
     BarChart3,
     CircleDollarSign,
     CreditCard,
+    Package,
     Settings,
     ShoppingCart,
     Truck
@@ -18,6 +19,14 @@ export const modules = [
     },
     {
         id: 2,
+        title: "Compras",
+        description: "Compras por fornecedor a partir das vendas.",
+        icon: Package,
+        color: "bg-purple-100",
+        route: "/home/purchases"
+    },
+    {
+        id: 3,
         title: "Conciliação",
         description: "Acesse informações financeiras, cobranças e pagamentos.",
         icon: CreditCard,
@@ -25,7 +34,7 @@ export const modules = [
         route: "/home/accounts"
     },
     {
-        id: 3,
+        id: 4,
         title: "Pronta Entrega",
         description: "Gerencie os itens disponíveis para entrega imediata.",
         icon: Truck,
@@ -33,7 +42,7 @@ export const modules = [
         route: "/home/readytoship"
     },
     {
-        id: 4,
+        id: 5,
         title: "Despesas",
         description: "Registre aqui suas despesas para ter maior controle.",
         icon: CircleDollarSign,
@@ -41,7 +50,7 @@ export const modules = [
         route: "/home/expenses"
     },
     {
-        id: 5,
+        id: 6,
         title: "Dashboards",
         description: "Visualize dados analíticos e relatórios em tempo real.",
         icon: BarChart3,
@@ -49,7 +58,7 @@ export const modules = [
         route: "/home/dashboards"
     },
     {
-        id: 6,
+        id: 7,
         title: "Configuração",
         description: "Personalize preferências e parâmetros do sistema.",
         icon: Settings,

@@ -17,9 +17,30 @@ export const getStatusColor = (status: string | null | undefined): string => {
         [Status_String.PartialPayment]: "bg-amber-100 text-amber-800 border-amber-200",
         [Status_String.FullyPaid]: "bg-teal-100 text-teal-800 border-teal-200",
         [Status_String.DeliveredToClient]: "bg-indigo-100 text-indigo-800 border-indigo-200",
+        ["Compra Pendente"]: "bg-yellow-100 text-yellow-800 border-yellow-200",
+        ["Compra Realizada"]: "bg-blue-100 text-blue-800 border-blue-200",
+        ["Pendente"]: "bg-gray-100 text-gray-800 border-gray-200",
+        ["Parcialmente Pago"]: "bg-amber-100 text-amber-800 border-amber-200",
+        ["Totalmente Pago"]: "bg-teal-100 text-teal-800 border-teal-200",
     };
 
     return statusColors[status] || "bg-gray-100 text-gray-800 border-gray-200";
+};
+
+export const getPurchaseLineCardStyles = (
+    statusPagamento: string,
+    isSelected: boolean
+): { background: string; text: string } => {
+    if (isSelected) {
+        return { background: "bg-purple-600", text: "text-white" }
+    }
+    if (statusPagamento === "Totalmente Pago") {
+        return { background: "bg-teal-50", text: "text-teal-900" }
+    }
+    if (statusPagamento === "Parcialmente Pago") {
+        return { background: "bg-amber-50", text: "text-amber-900" }
+    }
+    return { background: "bg-white", text: "text-gray-900" }
 };
 
 /**

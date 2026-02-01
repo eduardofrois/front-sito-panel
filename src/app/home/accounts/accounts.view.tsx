@@ -4,7 +4,7 @@ import { ProntaEntregaView } from "@/components/accounts/pronta-entrega-view"
 import { IsLoadingCard } from "@/components/global/isloading-card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { triggerStyle } from "@/constants/style/trigger.style"
-import { Package, ShoppingCart, Truck } from "lucide-react"
+import { Package, ShoppingCart } from "lucide-react"
 import { useAccountsModel } from "./accounts.model"
 
 type AccountsViewProps = ReturnType<typeof useAccountsModel>
@@ -51,16 +51,11 @@ export const AccountsView = (props: AccountsViewProps) => {
     return (
         <div className="pb-6">
             <Tabs defaultValue="accounts-pay" className="w-full">
-                <TabsList className="grid w-full grid-cols-3 p-1 h-12 bg-white">
+                <TabsList className="grid w-full grid-cols-2 p-1 h-12 bg-white">
                     <TabsTrigger value="accounts-pay" className={triggerStyle}>
                         <ShoppingCart className="w-4 h-4" />
                         <span className="hidden sm:inline">Contas a Pagar</span>
                         <span className="sm:hidden">Pagar</span>
-                    </TabsTrigger>
-                    <TabsTrigger value="pronta-entrega" className={triggerStyle}>
-                        <Truck className="w-4 h-4" />
-                        <span className="hidden sm:inline">Pronta Entrega</span>
-                        <span className="sm:hidden">Entrega</span>
                     </TabsTrigger>
                     <TabsTrigger value="accounts-receive" className={triggerStyle}>
                         <Package className="w-4 h-4" />
