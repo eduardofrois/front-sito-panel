@@ -13,6 +13,10 @@ export const PurchasesView = (props: PurchasesViewProps) => {
         pagination,
         handlePageChange,
         handleFiltersChange,
+        selectedLineKeysForRealizarCompra,
+        handleToggleRealizarCompra,
+        handleRealizarCompra,
+        isPendingRealizarCompra,
     } = props
 
     return (
@@ -23,6 +27,10 @@ export const PurchasesView = (props: PurchasesViewProps) => {
             pagination={pagination}
             onPageChange={handlePageChange}
             onFiltersChange={handleFiltersChange}
+            selectedLineKeysForRealizarCompra={selectedLineKeysForRealizarCompra}
+            onToggleRealizarCompra={handleToggleRealizarCompra}
+            onRealizarCompra={handleRealizarCompra}
+            isPendingRealizarCompra={isPendingRealizarCompra}
         />
     )
 }

@@ -1,7 +1,9 @@
 "use client"
 
 import type { PurchaseLine } from "@/app/home/purchases/purchases.interface"
+import { Status_String } from "@/constants/order-status"
 import { SharedDataTable, StatusBadge, type TableColumn } from "@/components/shared/shared-data-table"
+import { Checkbox } from "@/components/ui/checkbox"
 import { formatCurrency } from "@/functions/format-functions"
 import { getPurchaseLineCardStyles } from "@/functions/style-functions"
 import { useMemo } from "react"
@@ -16,6 +18,9 @@ interface PurchasesTableProps {
     onSelectAll?: () => void
     isLoading?: boolean
     canSelect?: (item: PurchaseLineWithId) => boolean
+    selectedLineKeysForRealizarCompra?: string[]
+    onToggleRealizarCompra?: (item: PurchaseLineWithId) => void
+    isPendingRealizarCompra?: boolean
 }
 
 export function PurchasesTable({
@@ -26,9 +31,36 @@ export function PurchasesTable({
     onSelectAll,
     isLoading = false,
     canSelect,
+    selectedLineKeysForRealizarCompra = [],
+    onToggleRealizarCompra,
+    isPendingRealizarCompra = false,
 }: PurchasesTableProps) {
+    const showRealizarCompraColumn = Boolean(onToggleRealizarCompra)
     const columns: TableColumn<PurchaseLineWithId>[] = useMemo(
         () => [
+            ...(showRealizarCompraColumn
+                ? [
+                      {
+                          key: "realizar_compra",
+                          header: "Realizar compra",
+                          accessor: (item: PurchaseLineWithId) =>
+                              item.status_compra === Status_String.PendingPurchase ? (
+                                  <div className="flex justify-center" onClick={(e) => e.stopPropagation()}>
+                                      <Checkbox
+                                          checked={selectedLineKeysForRealizarCompra.includes(item.line_key)}
+                                          onCheckedChange={() => onToggleRealizarCompra?.(item)}
+                                          disabled={isPendingRealizarCompra}
+                                          className="border-gray-400"
+                                      />
+                                  </div>
+                              ) : (
+                                  <span className="text-gray-400">—</span>
+                              ),
+                          align: "center" as const,
+                          className: "w-24",
+                      },
+                  ]
+                : []),
             {
                 key: "supplier",
                 header: "Fornecedor",
@@ -93,7 +125,7 @@ export function PurchasesTable({
                 accessor: (item) => <StatusBadge status={item.status_pagamento} />,
             },
         ],
-        []
+        [showRealizarCompraColumn, selectedLineKeysForRealizarCompra, onToggleRealizarCompra, isPendingRealizarCompra]
     )
 
     const getRowStyles = useMemo(

@@ -14,27 +14,15 @@ export const useAccountsModel = () => {
         pageSize: 10,
     });
 
-    // Pagination state for "Contas a Receber" tab  
+    // Pagination state for "Contas a Receber" tab
     const [paginationReceive, setPaginationReceive] = useState({
-        pageIndex: 1,
-        pageSize: 10,
-    });
-
-    // Pagination state for "Pronta Entrega - Recebimento" tab
-    const [paginationRecebimento, setPaginationRecebimento] = useState({
-        pageIndex: 1,
-        pageSize: 10,
-    });
-
-    // Pagination state for "Pronta Entrega - Entregas" tab
-    const [paginationEntregas, setPaginationEntregas] = useState({
         pageIndex: 1,
         pageSize: 10,
     });
 
     // Filters state for "Contas a Pagar" tab
     const [filtersPay, setFiltersPay] = useState<OrderFilters>({
-        statuses: [Status.PendingPurchase, Status.ConfirmSale], // Default: Compra Pendente and Compra Realizada
+        statuses: [Status.PendingPurchase, Status.ConfirmSale, Status.PartialPayment],
     });
 
     // Filters state for "Contas a Receber" tab
@@ -45,22 +33,12 @@ export const useAccountsModel = () => {
         supplierId?: number
     }>({});
 
-    // Filters state for "Pronta Entrega - Recebimento" tab
-    const [filtersRecebimento, setFiltersRecebimento] = useState<OrderFilters>({
-        statuses: [Status.ConfirmSale], // Only ConfirmSale (COMPRA REALIZADA)
-    });
-
-    // Filters state for "Pronta Entrega - Entregas" tab
-    const [filtersEntregas, setFiltersEntregas] = useState<OrderFilters>({
-        statuses: [Status.ReadyForDelivery, Status.DeliveredToClient], // Only PRONTA ENTREGA and ENTREGUE
-    });
-
     // Fetch clients and suppliers
     const { data: clients = [], isLoading: isLoadingClients } = useQueryGetAllClients()
     const { data: suppliers = [], isLoading: isLoadingSuppliers } = useQueryGetAllSuppliers()
 
     // Fetch orders for "Contas a Pagar" with filters
-    const { data: ordersPayData, isLoading: isLoadingOrdersPay, refetch: refetchOrdersPay } = useQueryGetOrdersWithFilters({
+    const { data: ordersPayData, isLoading: isLoadingOrdersPay } = useQueryGetOrdersWithFilters({
         ...filtersPay,
         pageNumber: paginationPay.pageIndex,
         pageSize: paginationPay.pageSize,
@@ -71,20 +49,6 @@ export const useAccountsModel = () => {
         pageNumber: paginationReceive.pageIndex,
         pageSize: paginationReceive.pageSize,
         ...filtersReceive,
-    });
-
-    // Fetch orders for "Pronta Entrega - Recebimento" (ConfirmSale status only)
-    const { data: ordersRecebimentoData, isLoading: isLoadingRecebimento, refetch: refetchRecebimento } = useQueryGetOrdersWithFilters({
-        ...filtersRecebimento,
-        pageNumber: paginationRecebimento.pageIndex,
-        pageSize: paginationRecebimento.pageSize,
-    });
-
-    // Fetch orders for "Pronta Entrega - Entregas" (Checked, ReadyForDelivery, DeliveredToClient)
-    const { data: ordersEntregasData, isLoading: isLoadingEntregas, refetch: refetchEntregas } = useQueryGetOrdersWithFilters({
-        ...filtersEntregas,
-        pageNumber: paginationEntregas.pageIndex,
-        pageSize: paginationEntregas.pageSize,
     });
 
     // Status update mutation
@@ -103,7 +67,7 @@ export const useAccountsModel = () => {
 
         // If no status filter is provided, use default statuses
         if (!filters.statuses || filters.statuses.length === 0) {
-            filters.statuses = [Status.PendingPurchase, Status.ConfirmSale];
+            filters.statuses = [Status.PendingPurchase, Status.ConfirmSale, Status.PartialPayment];
         }
 
         setFiltersPay(filters);
@@ -114,14 +78,9 @@ export const useAccountsModel = () => {
     // Handle status update
     const handleUpdateStatus = useCallback(async (orderIds: number[], newStatus: number) => {
         await updateStatus({ orders: orderIds, value: newStatus });
-
-        // Invalidate queries to refresh data
         await queryClient.invalidateQueries({ queryKey: ["getOrdersWithFilters"] });
         await queryClient.invalidateQueries({ queryKey: ["getPendingPaidOrders"] });
-        await refetchOrdersPay();
-        await refetchRecebimento();
-        await refetchEntregas();
-    }, [updateStatus, queryClient, refetchOrdersPay, refetchRecebimento, refetchEntregas]);
+    }, [updateStatus, queryClient]);
 
     // Handle page change for "Contas a Pagar"
     const handlePageChangePay = useCallback((page: number) => {
@@ -131,16 +90,6 @@ export const useAccountsModel = () => {
     // Handle page change for "Contas a Receber"
     const handlePageChangeReceive = useCallback((page: number) => {
         setPaginationReceive(prev => ({ ...prev, pageIndex: page }));
-    }, []);
-
-    // Handle page change for "Pronta Entrega - Recebimento"
-    const handlePageChangeRecebimento = useCallback((page: number) => {
-        setPaginationRecebimento(prev => ({ ...prev, pageIndex: page }));
-    }, []);
-
-    // Handle page change for "Pronta Entrega - Entregas"
-    const handlePageChangeEntregas = useCallback((page: number) => {
-        setPaginationEntregas(prev => ({ ...prev, pageIndex: page }));
     }, []);
 
     // Handle filter changes for "Contas a Receber"
@@ -153,32 +102,6 @@ export const useAccountsModel = () => {
         setFiltersReceive(newFilters);
         // Reset to first page when filters change
         setPaginationReceive(prev => ({ ...prev, pageIndex: 1 }));
-    }, []);
-
-    // Handle filter changes for "Pronta Entrega - Recebimento"
-    const handleFiltersChangeRecebimento = useCallback((newFilters: {
-        clientId?: number
-        supplierId?: number
-    }) => {
-        setFiltersRecebimento({
-            ...newFilters,
-            statuses: [Status.ConfirmSale], // Always filter by ConfirmSale
-        });
-        // Reset to first page when filters change
-        setPaginationRecebimento(prev => ({ ...prev, pageIndex: 1 }));
-    }, []);
-
-    // Handle filter changes for "Pronta Entrega - Entregas"
-    const handleFiltersChangeEntregas = useCallback((newFilters: {
-        clientId?: number
-        supplierId?: number
-    }) => {
-        setFiltersEntregas({
-            ...newFilters,
-            statuses: [Status.ReadyForDelivery, Status.DeliveredToClient], // Only PRONTA ENTREGA and ENTREGUE
-        });
-        // Reset to first page when filters change
-        setPaginationEntregas(prev => ({ ...prev, pageIndex: 1 }));
     }, []);
 
     return {
@@ -208,31 +131,6 @@ export const useAccountsModel = () => {
         handlePageChangeReceive,
         handleFiltersChangeReceive,
 
-        // Data for "Pronta Entrega - Recebimento"
-        ordersRecebimento: ordersRecebimentoData?.data || [],
-        isLoadingRecebimento,
-        paginationRecebimento: {
-            pageIndex: paginationRecebimento.pageIndex,
-            pageSize: paginationRecebimento.pageSize,
-            totalPages: ordersRecebimentoData?.totalPages,
-            totalCount: ordersRecebimentoData?.totalCount,
-        },
-        handlePageChangeRecebimento,
-        handleFiltersChangeRecebimento,
-
-        // Data for "Pronta Entrega - Entregas"
-        ordersEntregas: ordersEntregasData?.data || [],
-        isLoadingEntregas,
-        paginationEntregas: {
-            pageIndex: paginationEntregas.pageIndex,
-            pageSize: paginationEntregas.pageSize,
-            totalPages: ordersEntregasData?.totalPages,
-            totalCount: ordersEntregasData?.totalCount,
-        },
-        handlePageChangeEntregas,
-        handleFiltersChangeEntregas,
-
-        // Common data
         clients,
         suppliers,
         isLoadingClients,

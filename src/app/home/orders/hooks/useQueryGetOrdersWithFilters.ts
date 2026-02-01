@@ -9,6 +9,7 @@ export interface OrderFilters {
     statuses?: number[];
     clientId?: number;
     supplierId?: number;
+    statusConference?: string;
     pageNumber?: number;
     pageSize?: number;
 }
@@ -32,6 +33,7 @@ async function getOrdersWithFilters(filters: OrderFilters): Promise<PaginatedOrd
         }
         if (filters.clientId) params.append('clientId', filters.clientId.toString());
         if (filters.supplierId) params.append('supplierId', filters.supplierId.toString());
+        if (filters.statusConference) params.append('statusConference', filters.statusConference);
         params.append('pageNumber', (filters.pageNumber ?? 1).toString());
         params.append('pageSize', (filters.pageSize ?? 10).toString());
 

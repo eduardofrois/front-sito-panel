@@ -1,115 +1,119 @@
-Aqui está o conteúdo totalmente formatado em **Markdown**, pronto para usar como documentação oficial, painho:
+# Fluxo Operacional do Sistema
+
+## Status (Enum)
+
+**Status do pedido (compra/venda):**
+
+* `PendingPurchase` → Compra Pendente
+* `ConfirmSale` → Compra Realizada
+* `ToCheck` → A Conferir
+* `Checked` → Conferido
+* `ReadyForDelivery` → Pronta a Entrega
+* `DeliveredToClient` → Entregue ao Cliente
+
+**Pagamento:**
+
+* `PartialPayment` → Pagamento Parcial
+* `FullyPaid` → Pagamento Quitado
+
+**Financeiro:**
+
+* `PaidPurchase` → Compra Quitada (pagamento fábrica)
+* `SaleToRecive` → Venda a Receber
 
 ---
 
-# **Fluxo Operacional: Solicitation, Orders, Contas e Conferência**
+## 1. Vendas
 
-## **1. Solicitation (Agrupamento de Pedidos)**
-
-A **Solicitation** atua como o agrupador dos pedidos criados pelo usuário.
-Ao iniciar uma nova solicitação, ela começa com o array `orders` vazio.
-Cada pedido adicionado simplesmente referencia seu próprio ID dentro da solicitação.
-
-**Estados e operações:**
-
-* **Criação da Solicitation:** `solicitation.orders = []`
-* **Adicionar Order:** inclusão do ID da Order no array `orders`
+* Cria o pedido inicial.
+* Pedido nasce com status **Compra Pendente** (`PendingPurchase`).
+* Tabela é somente leitura; nenhuma ação operacional acontece aqui.
 
 ---
 
-## **2. Ciclo de Vida da Order**
+## 2. Compras (alimentado por Vendas)
 
-Cada **Order** possui seu próprio fluxo independente dentro da Solicitation.
+**Responsabilidades:**
 
-### **2.1 Criação da Order**
+* Agrupar produtos por fornecedor.
+* Mostrar quantidade total por produto.
 
-Ao ser criada, a Order inicia com:
+**Status da compra:**
 
-* `status = Compra Pendente`
-* `status_conference = null`
-* `date_order = null`
-* `date_purchase_order = null`
-* `date_conference = null`
+* `PendingPurchase` (Compra Pendente)
+* `ConfirmSale` (Compra Realizada)
 
----
+**Status pagamento fábrica:**
 
-### **2.2 Compra Realizada**
+* `PaidPurchase` (Compra Quitada)
+* `PartialPayment` (Pagamento Parcial)
+* `FullyPaid` (Pagamento Quitado)
 
-Quando a compra é marcada como realizada:
+**Funcionalidades:**
 
-* `status → Compra Realizada`
-* `date_order` é preenchido
-* O sistema cria automaticamente um registro em **Contas a Pagar**, calculado como:
-  `cost_price * amount`
+* Filtros: Produto, Fornecedor, Status da compra, Status pagamento fábrica.
+* Seleção de múltiplas linhas com status **Compra Pendente**.
+* Botão **Realizar Compra**.
 
----
+**Ação "Realizar Compra":**
 
-### **2.3 Efetivar Compra**
-
-Ao efetivar (quitar) a compra:
-
-* `status → Compra Quitada`
-* `date_purchase_order` é preenchido
-* `status_conference → A Conferir`
-* A baixa em **Contas a Pagar** é realizada automaticamente
+* Atualiza status: `PendingPurchase` → `ConfirmSale`.
+* Atualiza automaticamente os pedidos relacionados: `status_conference` → **A Conferir** (`ToCheck`).
+* Endpoint: `PATCH /orders/realizar-compra` (body: `orderIds[]`).
+* Checkbox por linha para controlar pagamento da fábrica: `PartialPayment` / `FullyPaid` (via `PATCH /purchases/update-payment`).
 
 ---
 
-### **2.4 Conferência**
+## 3. Conferência (módulo Pronta Entrega – Aba 1)
 
-Após a compra estar quitada, a Order entra no fluxo de conferência:
-
-**Aguardando conferência**
-
-* `status_conference = A Conferir`
-
-**Conferência concluída**
-
-* `status_conference = Conferido`
-* `date_conference` é preenchido
+* Lista pedidos com `status_conference = "A Conferir"` (`ToCheck`).
+* Usuário realiza a conferência e, ao finalizar, atualiza: `ToCheck` → **Conferido** (`Checked`).
+* No backend: `PUT /orders?value=8` atualiza `status_conference` e `date_conference`.
 
 ---
 
-### **2.5 Fluxo Alternativo: Cliente Desistiu**
+## 4. Pronta Entrega (módulo Pronta Entrega – Aba 2)
 
-Caso o cliente desista:
-
-* `status → Pronta a Entrega`
-* O cliente é desvinculado da Order
-* É criado um registro em **Contas a Receber**, vinculado ao estoque de pronta entrega
-
----
-
-## **3. Contas a Pagar**
-
-### **3.1 Geração**
-
-Criada automaticamente quando a Order muda para **Compra Realizada**:
-
-* valor = `cost_price * amount`
-* vinculada à Order
-
-### **3.2 Baixa**
-
-A baixa é feita quando a Order passa para **Compra Quitada**.
+* Lista pedidos com `status_conference = "Conferido"` (`Checked`).
+* Ação: marcar como entregue: `Checked` → **Entregue ao Cliente** (`DeliveredToClient`).
+* `ReadyForDelivery` pode ser usado como estado intermediário na UX se fizer sentido.
+* No backend: `PUT /orders?value=11` atualiza status e `date_delivery`.
 
 ---
 
-## **4. Contas a Receber (Pronta Entrega)**
+## 5. Contas a Pagar (Conciliação)
 
-Acontece exclusivamente quando o cliente desiste.
+* Pedidos com status **Compra Realizada**, **Compra Pendente** ou **Pagamento Parcial** (filtros por status da compra e pagamento fábrica).
+* Controle de pagamento à fábrica: registrar pagamentos parciais ou quitar (`PaidPurchase`).
+* Ao quitar (Efetivar Compra): `status` → **Compra Quitada** e `status_conference` → **A Conferir** (pedido entra no fluxo de conferência).
+* Endpoint de pagamento: `PATCH /orders/update-paid-price`.
 
-* A Order é transformada em **Pronta a Entrega**
-* O cliente é removido
-* Gera-se uma Conta a Receber associada ao estoque de pronta entrega
+---
+
+## 6. Contas a Receber (Conciliação)
+
+* Pedidos com status **Entregue ao Cliente** (`DeliveredToClient`).
+* Listagem via `GET /orders/pending` (pedidos entregues).
+* Controle de pagamento do cliente: `PartialPayment` / `FullyPaid`.
+* Ao atingir **Pagamento Quitado** (`FullyPaid`), o pedido pode ser considerado finalizado.
+* `SaleToRecive` representa pedidos entregues ainda não totalmente pagos.
 
 ---
 
-## **5. Relações Gerais do Fluxo**
+## 7. Módulos e navegação
 
-* **Solicitation** apenas agrega as Orders.
-* **Orders** podem gerar contas a pagar ou contas a receber, dependendo do fluxo.
-* O fluxo de **conferência** só ocorre após o pedido estar **quitado**.
-* O fluxo de **Pronta Entrega** só ocorre quando há desistência do cliente.
+* **Vendas** – Criação de pedidos (somente leitura na tabela de listagem).
+* **Compras** – Agrupamento por fornecedor, Realizar Compra e registro de pagamento fábrica.
+* **Pronta Entrega** – Aba 1: Conferência (A Conferir → Conferido). Aba 2: Entregas (Conferido → Entregue ao Cliente).
+* **Conciliação** – Aba Contas a Pagar (pagamento fábrica) e Aba Contas a Receber (pagamento cliente, pedidos entregues).
 
 ---
+
+## 8. Endpoints principais
+
+* `PATCH /orders/realizar-compra` – Realizar compra (PendingPurchase → ConfirmSale, status_conference → A Conferir).
+* `PUT /orders?value=8` – Conferir pedido (ToCheck → Checked).
+* `PUT /orders?value=11` – Marcar como entregue ao cliente.
+* `PATCH /orders/update-paid-price` – Atualizar pagamento (cliente ou fábrica, conforme contexto).
+* `PATCH /purchases/update-payment` – Registrar pagamento fábrica nas linhas de compra.
+* `GET /orders/filter?statusConference=...` – Filtrar pedidos por `status_conference` (ex.: "A Conferir", "Conferido").

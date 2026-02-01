@@ -40,20 +40,18 @@ export const useReadyToShipModel = () => {
         action: 'entregar' | 'pronta_entrega'
     }[]>([])
 
-    // Query for Aba 1: Orders with status COMPRA REALIZADA (ConfirmSale = 4)
     const { data: dataRecebimento, isLoading: isLoadingRecebimento } = useQueryGetOrdersWithFilters({
         pageNumber: paginationRecebimento.pageIndex,
         pageSize: paginationRecebimento.pageSize,
-        statuses: [Status.ConfirmSale],
+        statusConference: "A Conferir",
         clientId: filtersRecebimento.clientId,
         supplierId: filtersRecebimento.supplierId,
     })
 
-    // Query for Aba 2: Orders with status CONFERIDO, PRONTA ENTREGA, ENTREGUE
     const { data: dataEntregas, isLoading: isLoadingEntregas } = useQueryGetOrdersWithFilters({
         pageNumber: paginationEntregas.pageIndex,
         pageSize: paginationEntregas.pageSize,
-        statuses: [Status.Checked, Status.ReadyForDelivery, Status.DeliveredToClient],
+        statusConference: "Conferido",
         clientId: filtersEntregas.clientId,
         supplierId: filtersEntregas.supplierId,
     })

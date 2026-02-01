@@ -1,6 +1,5 @@
 import { AccountsPayView } from "@/components/accounts/accounts-pay-view"
 import { AccountsReceive } from "@/components/accounts/accounts-receive"
-import { ProntaEntregaView } from "@/components/accounts/pronta-entrega-view"
 import { IsLoadingCard } from "@/components/global/isloading-card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { triggerStyle } from "@/constants/style/trigger.style"
@@ -25,18 +24,6 @@ export const AccountsView = (props: AccountsViewProps) => {
         paginationReceive,
         setPaginationReceive,
         handleFiltersChangeReceive,
-        // Pronta Entrega - Recebimento data
-        ordersRecebimento,
-        isLoadingRecebimento,
-        paginationRecebimento,
-        handlePageChangeRecebimento,
-        handleFiltersChangeRecebimento,
-        // Pronta Entrega - Entregas data
-        ordersEntregas,
-        isLoadingEntregas,
-        paginationEntregas,
-        handlePageChangeEntregas,
-        handleFiltersChangeEntregas,
         // Common data
         clients,
         suppliers,
@@ -44,7 +31,7 @@ export const AccountsView = (props: AccountsViewProps) => {
 
     const isLoading = isLoadingOrdersPay
 
-    if (isLoading && ordersPay.length === 0 && ordersReceive.length === 0 && ordersRecebimento.length === 0) {
+    if (isLoading && ordersPay.length === 0 && ordersReceive.length === 0) {
         return <IsLoadingCard />
     }
 
@@ -74,28 +61,6 @@ export const AccountsView = (props: AccountsViewProps) => {
                         pagination={paginationPay}
                         onPageChange={handlePageChangePay}
                         onFiltersChange={handleFiltersChange}
-                        onUpdateStatus={handleUpdateStatus}
-                    />
-                </TabsContent>
-
-                <TabsContent value="pronta-entrega" className="mt-0 p-4 sm:p-6">
-                    <ProntaEntregaView
-                        // Aba 1: Recebimento
-                        ordersRecebimento={ordersRecebimento}
-                        isLoadingRecebimento={isLoadingRecebimento}
-                        paginationRecebimento={paginationRecebimento}
-                        onPageChangeRecebimento={handlePageChangeRecebimento}
-                        onFiltersChangeRecebimento={handleFiltersChangeRecebimento}
-                        // Aba 2: Entregas
-                        ordersEntregas={ordersEntregas}
-                        isLoadingEntregas={isLoadingEntregas}
-                        paginationEntregas={paginationEntregas}
-                        onPageChangeEntregas={handlePageChangeEntregas}
-                        onFiltersChangeEntregas={handleFiltersChangeEntregas}
-                        // Common
-                        clients={clients}
-                        suppliers={suppliers}
-                        isUpdatingStatus={isUpdatingStatus}
                         onUpdateStatus={handleUpdateStatus}
                     />
                 </TabsContent>

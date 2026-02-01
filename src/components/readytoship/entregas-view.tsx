@@ -1,6 +1,7 @@
 "use client"
 
 import type { Client, Order, Supplier } from "@/app/home/orders/order.interface"
+import { Status_String } from "@/constants/order-status"
 import { IsLoadingCard } from "@/components/global/isloading-card"
 import { Button } from "@/components/ui/button"
 import { Pagination } from "@/components/ui/pagination"
@@ -116,36 +117,35 @@ export function EntregasView({
                     </div>
                 ) : (
                     <>
-                        {/* HTML Table */}
                         <div className="overflow-x-auto">
-                            <table className="w-full text-sm">
+                            <table className="w-full text-sm table-fixed min-w-[900px]">
+                                <colgroup>
+                                    <col className="w-24 min-w-[96px]" />
+                                    <col className="min-w-[140px]" />
+                                    <col className="w-14 min-w-[56px]" />
+                                    <col className="w-24 min-w-[96px]" />
+                                    <col className="w-24 min-w-[96px]" />
+                                    <col className="w-28 min-w-[112px]" />
+                                    <col className="min-w-[280px]" />
+                                </colgroup>
                                 <thead className="bg-gradient-to-r from-green-50 to-purple-50 border-b border-gray-200">
                                     <tr>
-                                        <th className="p-3 text-left text-xs font-semibold text-gray-600 uppercase">Código</th>
-                                        <th className="p-3 text-left text-xs font-semibold text-gray-600 uppercase">Descrição</th>
-                                        <th className="p-3 text-center text-xs font-semibold text-gray-600 uppercase">QTDE</th>
-                                        <th className="p-3 text-right text-xs font-semibold text-gray-600 uppercase">Preço (compra)</th>
-                                        <th className="p-3 text-right text-xs font-semibold text-gray-600 uppercase">Total</th>
-                                        <th className="p-3 text-center text-xs font-semibold text-gray-600 uppercase">Status</th>
-                                        <th className="p-3 w-28 text-center text-xs font-semibold text-gray-600 uppercase">
-                                            <div className="flex items-center justify-center gap-1">
-                                                <Truck className="w-3 h-3" />
-                                                <span>Entregar</span>
-                                            </div>
-                                        </th>
-                                        <th className="p-3 w-32 text-center text-xs font-semibold text-gray-600 uppercase">
-                                            <div className="flex items-center justify-center gap-1">
-                                                <Package className="w-3 h-3" />
-                                                <span>Pronta Entrega</span>
-                                            </div>
-                                        </th>
+                                        <th className="p-3 text-left text-xs font-semibold text-gray-600 uppercase whitespace-nowrap">Código</th>
+                                        <th className="p-3 text-left text-xs font-semibold text-gray-600 uppercase whitespace-nowrap">Descrição</th>
+                                        <th className="p-3 text-center text-xs font-semibold text-gray-600 uppercase whitespace-nowrap">QTDE</th>
+                                        <th className="p-3 text-right text-xs font-semibold text-gray-600 uppercase whitespace-nowrap">Preço</th>
+                                        <th className="p-3 text-right text-xs font-semibold text-gray-600 uppercase whitespace-nowrap">Total</th>
+                                        <th className="p-3 text-center text-xs font-semibold text-gray-600 uppercase whitespace-nowrap">Status</th>
+                                        <th className="p-3 text-center text-xs font-semibold text-gray-600 uppercase whitespace-nowrap">Destino do pedido</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     {orders.map((order) => {
                                         const currentAction = getEntregaAction(order.id)
                                         const total = order.cost_price * order.amount
-                                        const isCheckedStatus = order.status === "Conferido" || order.status === "CONFERIDO"
+                                        const isDelivered = order.status === Status_String.DeliveredToClient
+                                        const isReadyForDelivery = order.status === Status_String.ReadyForDelivery
+                                        const canSelectDestination = !isDelivered && !isReadyForDelivery
 
                                         return (
                                             <tr
@@ -154,69 +154,77 @@ export function EntregasView({
                                                     border-b border-gray-100 last:border-0 transition-colors
                                                     ${currentAction
                                                         ? currentAction === 'entregar' ? 'bg-green-50' : 'bg-purple-50'
-                                                        : 'bg-white hover:bg-gray-50'
+                                                        : isDelivered
+                                                          ? 'bg-green-50/50'
+                                                          : isReadyForDelivery
+                                                            ? 'bg-purple-50/50'
+                                                            : 'bg-white hover:bg-gray-50'
                                                     }
                                                     ${(isLoading || isUpdatingStatus) ? 'opacity-50' : ''}
                                                 `}
                                             >
-                                                <td className="p-3 font-mono text-sm text-gray-900">
+                                                <td className="p-3 font-mono text-sm text-gray-900 truncate" title={order.code || undefined}>
                                                     {order.code || "-"}
                                                 </td>
-                                                <td className="p-3 text-gray-900">
+                                                <td className="p-3 text-gray-900 truncate" title={order.description || order.brand || undefined}>
                                                     {order.description || order.brand || "-"}
                                                 </td>
                                                 <td className="p-3 text-center font-bold text-gray-900">
                                                     {order.amount}
                                                 </td>
-                                                <td className="p-3 text-right text-gray-900">
+                                                <td className="p-3 text-right text-gray-900 whitespace-nowrap">
                                                     {formatCurrency(order.cost_price)}
                                                 </td>
-                                                <td className="p-3 text-right font-semibold text-purple-700">
+                                                <td className="p-3 text-right font-semibold text-purple-700 whitespace-nowrap">
                                                     {formatCurrency(total)}
                                                 </td>
                                                 <td className="p-3 text-center">
-                                                    <span className={`px-2 py-1 rounded-full text-xs font-semibold border bg-white/20 ${getStatusColor(order.status || "CONFERIDO")}`}>
-                                                        {order.status || "CONFERIDO"}
+                                                    <span className={`inline-block px-2 py-1 rounded-full text-xs font-semibold border bg-white/20 truncate max-w-full ${getStatusColor(order.status || "Conferido")}`} title={order.status}>
+                                                        {order.status || "Conferido"}
                                                     </span>
                                                 </td>
-                                                <td className="p-3 text-center">
-                                                    {isCheckedStatus && (
-                                                        <button
-                                                            onClick={() => toggleEntregaSelection(order.id, 'entregar')}
-                                                            disabled={isLoading || isUpdatingStatus}
-                                                            className={`
-                                                                w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all
-                                                                ${currentAction === 'entregar'
-                                                                    ? 'bg-green-500 border-green-500 text-white'
-                                                                    : 'border-gray-300 hover:border-green-400'
-                                                                }
-                                                                disabled:opacity-50 disabled:cursor-not-allowed
-                                                            `}
-                                                        >
-                                                            {currentAction === 'entregar' && (
-                                                                <CheckCircle className="w-4 h-4" />
-                                                            )}
-                                                        </button>
-                                                    )}
-                                                </td>
-                                                <td className="p-3 text-center">
-                                                    {isCheckedStatus && (
-                                                        <button
-                                                            onClick={() => toggleEntregaSelection(order.id, 'pronta_entrega')}
-                                                            disabled={isLoading || isUpdatingStatus}
-                                                            className={`
-                                                                w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all
-                                                                ${currentAction === 'pronta_entrega'
-                                                                    ? 'bg-purple-500 border-purple-500 text-white'
-                                                                    : 'border-gray-300 hover:border-purple-400'
-                                                                }
-                                                                disabled:opacity-50 disabled:cursor-not-allowed
-                                                            `}
-                                                        >
-                                                            {currentAction === 'pronta_entrega' && (
-                                                                <CheckCircle className="w-4 h-4" />
-                                                            )}
-                                                        </button>
+                                                <td className="p-3">
+                                                    {canSelectDestination ? (
+                                                        <div className="flex flex-wrap items-center justify-center gap-2">
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => toggleEntregaSelection(order.id, 'entregar')}
+                                                                disabled={isLoading || isUpdatingStatus}
+                                                                className={`
+                                                                    flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold border-2 transition-all shrink-0
+                                                                    ${currentAction === 'entregar'
+                                                                        ? 'bg-green-500 border-green-500 text-white'
+                                                                        : 'border-gray-300 text-gray-700 hover:border-green-400 hover:bg-green-50'
+                                                                    }
+                                                                    disabled:opacity-50 disabled:cursor-not-allowed
+                                                                `}
+                                                            >
+                                                                {currentAction === 'entregar' && <CheckCircle className="w-3.5 h-3.5" />}
+                                                                <Truck className="w-3.5 h-3.5" />
+                                                                <span>Entregue ao cliente</span>
+                                                            </button>
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => toggleEntregaSelection(order.id, 'pronta_entrega')}
+                                                                disabled={isLoading || isUpdatingStatus}
+                                                                className={`
+                                                                    flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold border-2 transition-all shrink-0
+                                                                    ${currentAction === 'pronta_entrega'
+                                                                        ? 'bg-purple-500 border-purple-500 text-white'
+                                                                        : 'border-gray-300 text-gray-700 hover:border-purple-400 hover:bg-purple-50'
+                                                                    }
+                                                                    disabled:opacity-50 disabled:cursor-not-allowed
+                                                                `}
+                                                            >
+                                                                {currentAction === 'pronta_entrega' && <CheckCircle className="w-3.5 h-3.5" />}
+                                                                <Package className="w-3.5 h-3.5" />
+                                                                <span>Pronta entrega</span>
+                                                            </button>
+                                                        </div>
+                                                    ) : (
+                                                        <span className={`text-xs font-medium ${isDelivered ? 'text-green-700' : 'text-purple-700'}`}>
+                                                            {isDelivered ? "Já entregue" : "Pronta entrega"}
+                                                        </span>
                                                     )}
                                                 </td>
                                             </tr>

@@ -29,6 +29,10 @@ interface PurchasesPageViewProps {
         statusCompra?: string
         statusPagamento?: string
     }) => void
+    selectedLineKeysForRealizarCompra?: string[]
+    onToggleRealizarCompra?: (item: PurchaseLineWithId) => void
+    onRealizarCompra?: () => void
+    isPendingRealizarCompra?: boolean
 }
 
 export function PurchasesPageView({
@@ -38,6 +42,10 @@ export function PurchasesPageView({
     pagination,
     onPageChange,
     onFiltersChange,
+    selectedLineKeysForRealizarCompra = [],
+    onToggleRealizarCompra,
+    onRealizarCompra,
+    isPendingRealizarCompra = false,
 }: PurchasesPageViewProps) {
     const { mutateAsync: updatePayment, isPending } = useMutateUpdatePurchasePayment()
 
@@ -109,9 +117,18 @@ export function PurchasesPageView({
                             Compras por fornecedor ({pagination.totalCount})
                         </h2>
                         <p className="text-xs sm:text-sm text-gray-600">
-                            Produtos das vendas agrupados por fornecedor. Marque para registrar pagamento.
+                            Produtos das vendas agrupados por fornecedor. Selecione linhas em Compra Pendente e clique em Realizar Compra. Marque para registrar pagamento.
                         </p>
                     </div>
+                    {onRealizarCompra && selectedLineKeysForRealizarCompra.length > 0 && (
+                        <Button
+                            onClick={onRealizarCompra}
+                            disabled={isPendingRealizarCompra}
+                            className="bg-purple-600 hover:bg-purple-700"
+                        >
+                            {isPendingRealizarCompra ? "Processando…" : "Realizar Compra"}
+                        </Button>
+                    )}
                 </div>
             </div>
 
@@ -130,6 +147,9 @@ export function PurchasesPageView({
                     onSelectAll={() => {}}
                     isLoading={isPending}
                     canSelect={canSelect}
+                    selectedLineKeysForRealizarCompra={selectedLineKeysForRealizarCompra}
+                    onToggleRealizarCompra={onToggleRealizarCompra}
+                    isPendingRealizarCompra={isPendingRealizarCompra}
                 />
 
                 <div className="mt-4 pt-4 border-t border-gray-200">
